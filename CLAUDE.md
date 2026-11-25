@@ -39,7 +39,7 @@ Deploy order matters: `commitreveal` before the realm that imports it (`local-st
 
 Local chain: run `local-start.sh` in its own terminal or as a background task; it stays attached to `gnodev` until stopped. Then open `http://localhost:5173/?chain=local` (dev key) or `?chain=local&signer=adena`.
 
-Definition of done: Vitest, lint, build and the Playwright tests pass, plus the Gno tests when the realm changed. Report real output.
+Definition of done: Vitest, lint, build and the Playwright tests pass, plus the Gno tests (and `gno lint`, `gno fmt`) when the realm changed, and the settle checker tests when settle rules or `RoundJSON` changed. Report real output.
 
 ## Rules for this code
 

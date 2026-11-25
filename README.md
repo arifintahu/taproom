@@ -12,7 +12,7 @@ Taproom is an entry for the Gnome Tavern Hackathon. It is a community project wi
 
 Each table runs one round of the classic "guess two thirds of the average" game, with real coins at stake and nothing hidden from the chain.
 
-1. **Seal.** Pay the 1 GNOT entry fee and write a whole number from 0 to 100 on your slip. Only a hash of your pick goes on chain (`sha256("<round>:<your address>:<pick>:<salt>")`, so a copied hash is useless to anyone else), so nobody can see it, not even the tavern.
+1. **Seal.** Pay the 1 GNOT entry fee and write a whole number from 0 to 100 on your slip. Only a hash of your pick goes on chain, `sha256("<round>:<your address>:<pick>:<salt>")`, so nobody can see it, not even the tavern. The round and your address are part of the hash, so a copied hash is useless to anyone else. The app keeps the salt in your browser; back it up from the Ledger.
 2. **Reveal.** When the hourglass turns, break your seal. The realm checks your pick against the hash. Miss the reveal window and your deposit stays in the pot.
 3. **Settle.** When the reveal window closes, anyone can settle the round, visitors included. The winner is the revealed pick closest to two thirds of the average of all revealed picks.
 4. **Claim.** Winners claim their share. Payouts are pull-based: settling credits a balance, and claiming sends the coins.
@@ -112,7 +112,7 @@ late := poll.Unrevealed() // committed but never opened
 
 The API: `New`, `Phase` (commit, reveal, closed), `Commit`, `Reveal`, `Has`, `Count`, `IsRevealed`, `Value`, `Players`, `Revealed`, `Unrevealed`, plus `Hash` and `Verify`. Errors are exported values (`ErrCommitClosed`, `ErrMismatch`, ...). The shortest example is `realm/commitreveal/example_test.gno`.
 
-`realm/sealedpoll` (`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll`) is a second realm built on the package, in about 200 lines. Anyone opens a question with 2 to 8 options (`NewPoll`), voters seal a choice (`Vote` with `commitreveal.Hash(option, salt)`), then open it (`Open`). `Tally` returns the counts as JSON, and `Render` lists polls newest first, 10 per page, with their results and the number of sealed votes never opened. Options cannot contain `:` (so a vote can only open one way), windows run 1 minute to 7 days, salts must be at least 16 characters, and poll text is escaped on the page. It holds no coins: every window, vote and reveal rule comes from `commitreveal`.
+`realm/sealedpoll` (`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll`) is a second realm built on the package, in about 300 lines. Anyone opens a question with 2 to 8 options (`NewPoll`), voters seal a choice (`Vote` with `commitreveal.Hash(option, salt)`), then open it (`Open`). `Tally` returns the counts as JSON, and `Render` lists polls newest first, 10 per page, with their results and the number of sealed votes never opened. Options cannot contain `:` (so a vote can only open one way), windows run 1 minute to 7 days, salts must be at least 16 characters, and poll text is escaped on the page. It holds no coins: every window, vote and reveal rule comes from `commitreveal`.
 
 ## avatar: the same gnome on chain
 
@@ -127,14 +127,14 @@ The Taproom realm exposes it as `AvatarSVG(addr)`, drawn with the items the play
 
 ## Leaderboards and pages on gno.land
 
-The realm keeps leaderboard stats on each player (net coins, wins, average distance to the target, best weekly streak) and ranks five boards: points, net coins, sharpest guesses, longest streak and style (the rarity of the items worn). `LeaderboardJSON(board, limit)` returns the top rows, at most 50, with every stat in each row. Each board is a sorted index updated when a stat moves, so reading it costs the same with ten players or ten thousand; only players who have joined a round are listed.
+The realm keeps leaderboard stats on each player (net coins, wins, average distance to the target, best weekly streak) and ranks five boards: points, net coins, sharpest guesses, longest streak and style (the rarity of the items worn). `LeaderboardJSON(board, limit)` returns the top rows, at most 50, with every stat in each row. Each board is a sorted index updated when a stat moves, so reading the top rows stays cheap however many players there are; only players who have joined a round are listed.
 
 `Render` turns the realm into a small site on gnoweb, with each player's gnome drawn by the `avatar` package:
 
 | Path | Page |
 |---|---|
 | `taproom` | Open tables, recent results and the top 5 by points |
-| `taproom:board/<points|net|sharp|streak|style>` | One board, top 10 |
+| `taproom:board/<name>` | One board, top 10; `<name>` is `points`, `net`, `sharp`, `streak` or `style` |
 | `taproom:round/<id>` | Phase, result, target, and every seat with its pick and status |
 | `taproom:player/<address>` | Rank, points, streak, wins, net coins, average distance, style |
 
@@ -154,6 +154,8 @@ node tools/verify/verify-round.mjs 3                 # one round
 node tools/verify/verify-round.mjs --all             # every round; exit code 1 on any mismatch
 node tools/verify/verify-round.mjs --all --rpc https://rpc.onyx.testnets.gno.land:443 --realm <realm path>
 ```
+
+Sample output for a three-way tie (addresses shortened here):
 
 ```
 round 5: completed, target 20.00, pot 4 GNOT, fee 0.02 GNOT
