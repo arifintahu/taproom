@@ -10,7 +10,7 @@ import (
 	"gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar"
 )
 
-func RoundCount() int { return len(rounds) }
+func RoundCount() int { return roundCount }
 
 // AvatarSVG draws a player's gnome wearing their equipped items (see the avatar package).
 func AvatarSVG(a address) string {
@@ -32,11 +32,11 @@ func RoundsJSON(offset, limit int) string {
 	}
 	var sb strings.Builder
 	sb.WriteString("[")
-	for i := offset; i >= 0 && i < len(rounds) && i < offset+limit; i++ {
+	for i := offset; i >= 0 && i < roundCount && i < offset+limit; i++ {
 		if i > offset {
 			sb.WriteString(",")
 		}
-		writeRound(&sb, rounds[i])
+		writeRound(&sb, getRound(i))
 	}
 	sb.WriteString("]")
 	return sb.String()

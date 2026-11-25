@@ -12,7 +12,7 @@ Taproom is an entry for the Gnome Tavern Hackathon. It is a community project wi
 
 Each table runs one round of the classic "guess two thirds of the average" game, with real coins at stake and nothing hidden from the chain.
 
-1. **Seal.** Pay the 1 GNOT entry fee and write a whole number from 0 to 100 on your slip. Only a hash of your pick goes on chain (`sha256("<pick>:<salt>")`), so nobody can see it, not even the tavern.
+1. **Seal.** Pay the 1 GNOT entry fee and write a whole number from 0 to 100 on your slip. Only a hash of your pick goes on chain (`sha256("<round>:<your address>:<pick>:<salt>")`, so a copied hash is useless to anyone else), so nobody can see it, not even the tavern.
 2. **Reveal.** When the hourglass turns, break your seal. The realm checks your pick against the hash. Miss the reveal window and your deposit stays in the pot.
 3. **Settle.** When the reveal window closes, anyone can settle the round, visitors included. The winner is the revealed pick closest to two thirds of the average of all revealed picks.
 4. **Claim.** Winners claim their share. Payouts are pull-based: settling credits a balance, and claiming sends the coins.
@@ -126,7 +126,7 @@ The Taproom realm exposes it as `AvatarSVG(addr)`, drawn with the items the play
 
 ## Leaderboards and pages on gno.land
 
-The realm keeps leaderboard stats on each player (net coins, wins, average distance to the target, best weekly streak) and ranks five boards: points, net coins, sharpest guesses, longest streak and style (the rarity of the items worn). `LeaderboardJSON(board, limit)` returns the top rows, at most 50, with every stat in each row.
+The realm keeps leaderboard stats on each player (net coins, wins, average distance to the target, best weekly streak) and ranks five boards: points, net coins, sharpest guesses, longest streak and style (the rarity of the items worn). `LeaderboardJSON(board, limit)` returns the top rows, at most 50, with every stat in each row. Each board is a sorted index updated when a stat moves, so reading it costs the same with ten players or ten thousand; only players who have joined a round are listed.
 
 `Render` turns the realm into a small site on gnoweb, with each player's gnome drawn by the `avatar` package:
 
@@ -165,10 +165,10 @@ bash realm/scripts/local-stop.sh
 ## Tests
 
 ```bash
-bash realm/scripts/test.sh    # Gno tests: commitreveal (7), avatar (6), the realm (23), sealedpoll (2)
+bash realm/scripts/test.sh    # Gno tests: commitreveal (7), avatar (6), the realm (27), sealedpoll (2)
 cd web
-pnpm test                     # Vitest: rules, settle invariants, scenarios S1-S13, chain adapters (81)
-pnpm test:e2e                 # Playwright: room, full round, Confirm sheet paths, shop, practice (8)
+pnpm test                     # Vitest: rules, settle invariants, scenarios S1-S13, chain adapters (89)
+pnpm test:e2e                 # Playwright: room, full round, Confirm sheet paths, shop, practice, dev mode (12)
 pnpm lint && pnpm build
 ```
 

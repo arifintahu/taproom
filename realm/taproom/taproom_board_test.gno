@@ -18,7 +18,7 @@ func playRound(cur realm, t *testing.T, start int64, who [3]address, reveal [3]b
 	for i, a := range who {
 		testing.SetRealm(testing.NewUserRealm(a))
 		fund()
-		Join(cross(cur), id, CommitHash(picks[i], salts[i]))
+		Join(cross(cur), id, CommitHash(id, a, picks[i], salts[i]))
 	}
 	nowOverride = start + 150
 	for i, a := range who {

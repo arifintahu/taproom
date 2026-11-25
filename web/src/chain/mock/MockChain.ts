@@ -5,7 +5,7 @@ import {
   ENTRY_FEE, FREEZE_COST, ITEM, MAX_FREEZES, MAX_OPEN_ROUNDS, MAX_PLAYERS, NETWORK, SKINS,
   TARGET_DEN, TARGET_NUM, PRESETS, REALM_PATH, type ItemCode, type PresetId, type Slot,
 } from '../../game/constants'
-import { commitHash } from '../../game/commit'
+import { commitHash, sha256Hex } from '../../game/commit'
 import { applyMissedWeeks, bonusOf, computeResult, pointsFor, streakOnPlay, targetOf, weekOf } from '../../game/rules'
 import type { HallEntry, Player, Round, Ugnot, WalletInfo } from '../../game/types'
 import type { ChainClient, TxResult } from '../types'
@@ -149,7 +149,7 @@ export class MockChain implements ChainClient {
     this.rounds.push(r)
     ;(o.entries ?? []).forEach((e, i) => {
       if ('me' in e) {
-        r.entries.push({ addr: this.wallet.address, commit: commitHash(e.pick, e.salt), revealed: false, pick: null, bonus: 0 })
+        r.entries.push({ addr: this.wallet.address, commit: commitHash(r.id, this.wallet.address, e.pick, e.salt), revealed: false, pick: null, bonus: 0 })
         if (e.revealed) this.doReveal(r, this.wallet.address, e.pick, e.salt, r.commitEnd)
         return
       }
@@ -159,7 +159,7 @@ export class MockChain implements ChainClient {
         joinAt: e.joinAt ?? 0, revealAt: e.revealAt ?? 20, willReveal: e.willReveal !== false,
       }
       if (e.joined) {
-        r.entries.push({ addr: s.addr, name: s.name, commit: commitHash(s.pick, s.salt), revealed: false, pick: null, bonus: 0 })
+        r.entries.push({ addr: s.addr, name: s.name, commit: commitHash(r.id, s.addr, s.pick, s.salt), revealed: false, pick: null, bonus: 0 })
         if (e.revealed) this.doReveal(r, s.addr, s.pick, s.salt, r.commitEnd)
       }
       r.scripts.push(s)
@@ -256,7 +256,7 @@ export class MockChain implements ChainClient {
       return { ok: false, reason: (e as Error).message }
     }
     const n = ++this.txSeq
-    return { ok: true, hash: commitHash(n, 'tx').slice(0, 16).toUpperCase(), height: 482_113 + n * 7 }
+    return { ok: true, hash: sha256Hex(`tx:${n}`).slice(0, 16).toUpperCase(), height: 482_113 + n * 7 }
   }
 
   private round(id: number): MockRound {
@@ -384,7 +384,7 @@ export class MockChain implements ChainClient {
     if (!e) throw new Error('not a player in this round')
     if (e.revealed) throw new Error('already revealed')
     if (!Number.isInteger(pick) || pick < 0 || pick > 100) throw new Error('pick must be 0..100')
-    if (commitHash(pick, salt) !== e.commit) throw new Error('reveal does not match commit')
+    if (commitHash(r.id, addr, pick, salt) !== e.commit) throw new Error('reveal does not match commit')
     e.revealed = true
     e.pick = pick
     const p = this.player(addr)
@@ -420,7 +420,7 @@ export class MockChain implements ChainClient {
       for (const s of r.scripts) {
         let e = r.entries.find((x) => x.addr === s.addr)
         if (!e && s.joinAt < cw && this.clock >= r.start + s.joinAt && r.entries.length < MAX_PLAYERS) {
-          e = { addr: s.addr, name: s.name, commit: commitHash(s.pick, s.salt), revealed: false, pick: null, bonus: 0 }
+          e = { addr: s.addr, name: s.name, commit: commitHash(r.id, s.addr, s.pick, s.salt), revealed: false, pick: null, bonus: 0 }
           r.entries.push(e)
         }
         if (e && !e.revealed && s.willReveal && s.revealAt < rw && this.clock >= r.commitEnd + s.revealAt) {

@@ -16,10 +16,14 @@ export interface GnoConfig {
   signer: Signer
 }
 
-/** Gas wanted per call, with headroom over local measurements (NewRound 4.1M, Join 5.5M, Settle 12.4M at 10 players). */
+/**
+ * Gas wanted per call, with headroom over local measurements (NewRound 7M, Join 11-18.5M, Reveal 13-14M,
+ * Settle 22M at 4 seats; leaderboard index writes make Join, Reveal, Settle and Equip cost more).
+ * The signer offers gasWanted / 1000 ugnot as the fee, so keep these tight.
+ */
 const GAS: Record<string, number> = {
-  NewRound: 20_000_000, Join: 20_000_000, Reveal: 20_000_000, Settle: 50_000_000, Claim: 20_000_000,
-  BuyItem: 20_000_000, Equip: 20_000_000, BuyFreeze: 20_000_000, BuySkin: 20_000_000, WithdrawFees: 20_000_000,
+  NewRound: 20_000_000, Join: 30_000_000, Reveal: 30_000_000, Settle: 80_000_000, Claim: 20_000_000,
+  BuyItem: 20_000_000, Equip: 30_000_000, BuyFreeze: 20_000_000, BuySkin: 20_000_000, WithdrawFees: 20_000_000,
 }
 
 /** Realm boards behind the Hall's tabs and its style gallery. */

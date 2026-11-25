@@ -1,4 +1,6 @@
-// Commit format used by the realm: CommitHash(pick, salt) = hex(sha256("<pick>:<salt>")).
+// Commit format used by the realm: CommitHash(round, player, pick, salt) =
+// hex(sha256("<round>:<player address>:<pick>:<salt>")). The round and player are bound in, so a copied
+// hash cannot be opened by someone else or in another round.
 // A small synchronous SHA-256 so the mock chain and the UI share one code path.
 
 const K = new Uint32Array([
@@ -49,7 +51,7 @@ export function sha256Hex(text: string): string {
   return Array.from(H, (x) => x.toString(16).padStart(8, '0')).join('')
 }
 
-export const commitHash = (pick: number, salt: string) => sha256Hex(`${pick}:${salt}`)
+export const commitHash = (roundId: number, addr: string, pick: number, salt: string) => sha256Hex(`${roundId}:${addr}:${pick}:${salt}`)
 
 /** 32 random bytes as hex. */
 export function newSalt(): string {

@@ -411,7 +411,7 @@ export class Session {
     const address = this.snap.wallet.address
     this.request('join', 'Join the table and seal your pick', sel.joinRows(r, this.chain.realmPath), async () => {
       this.salts.save({ realm: this.chain.realmPath, roundId: r.id, address, pick, salt })
-      return this.chain.join(r.id, commitHash(pick, salt))
+      return this.chain.join(r.id, commitHash(r.id, address, pick, salt))
     }, () => {
       this.mark('join')
       this.bark(LINES.sealed)

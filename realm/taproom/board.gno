@@ -1,17 +1,23 @@
 package taproom
 
 // Leaderboards: net coins, sharpest guesses, longest streak, points and style. Stats are kept on
-// each Player at Join and Settle, so a board is one pass over the players plus a sort.
+// each Player, and each board is a sorted index (an avl tree) updated whenever a listed stat moves,
+// so reading the top rows costs the same however many players there are.
 
 import (
 	"strconv"
 	"strings"
+
+	"gno.land/p/nt/avl/v0"
 )
 
-const maxBoardRows = 50
+const (
+	maxBoardRows = 50
+	boardCount   = 5
+)
 
 // boards in display order: key, title, column heading.
-var boards = [][3]string{
+var boards = [boardCount][3]string{
 	{"points", "Points", "Lifetime points"},
 	{"net", "Net coins", "Net GNOT"},
 	{"sharp", "Sharpest guesses", "Avg distance"},
@@ -50,56 +56,88 @@ func sharp100(p *Player) int64 {
 	return p.DistSum100 / p.Scored
 }
 
-// better reports whether row a ranks above row b on a board.
-func better(board string, a, b *Player) bool {
-	switch board {
-	case "points":
-		return a.Lifetime > b.Lifetime
-	case "net":
-		return a.Net > b.Net
-	case "sharp":
-		return sharp100(a) < sharp100(b) // lower is sharper; players without scores are left out
-	case "streak":
-		return a.BestStreak > b.BestStreak
-	case "style":
-		return styleOf(a.Equipped) > styleOf(b.Equipped)
+// boardIdx holds one sorted index per board: boardKey -> address.
+var boardIdx = newBoardIdx()
+
+func newBoardIdx() [boardCount]*avl.Tree {
+	var t [boardCount]*avl.Tree
+	for i := range t {
+		t[i] = avl.NewTree()
 	}
-	panic("unknown board")
+	return t
 }
 
-// board returns the top rows of a board, best first (ties keep address order).
-func board(name string, limit int) []boardRow {
-	known := false
-	for _, b := range boards {
-		known = known || b[0] == name
+// boardKey orders a player on board i, best first; ties go by address. ok is false when the
+// player is not listed: before their first Join, or on Sharpest guesses before a completed round.
+func boardKey(i int, a address, p *Player) (key string, ok bool) {
+	if !p.Joined {
+		return "", false
 	}
-	if !known {
+	var v int64
+	lowerIsBetter := false
+	switch boards[i][0] {
+	case "points":
+		v = p.Lifetime
+	case "net":
+		v = p.Net
+	case "sharp":
+		if p.Scored == 0 {
+			return "", false
+		}
+		v, lowerIsBetter = sharp100(p), true
+	case "streak":
+		v = p.BestStreak
+	case "style":
+		v = styleOf(p.Equipped)
+	}
+	k := uint64(v) ^ (1 << 63) // signed order as unsigned order
+	if !lowerIsBetter {
+		k = ^k
+	}
+	h := strconv.FormatUint(k, 16)
+	for len(h) < 16 {
+		h = "0" + h
+	}
+	return h + ":" + a.String(), true
+}
+
+// reindex moves a player's rows in the board indexes after their stats change.
+func reindex(a address) {
+	p := getPlayer(a)
+	for i := 0; i < boardCount; i++ {
+		k, ok := boardKey(i, a, p)
+		if k == p.boardKeys[i] {
+			continue
+		}
+		if p.boardKeys[i] != "" {
+			boardIdx[i].Remove(p.boardKeys[i])
+		}
+		if ok {
+			boardIdx[i].Set(k, a)
+		}
+		p.boardKeys[i] = k
+	}
+}
+
+// board returns the top rows of a board, best first.
+func board(name string, limit int) []boardRow {
+	idx := -1
+	for i, b := range boards {
+		if b[0] == name {
+			idx = i
+		}
+	}
+	if idx < 0 {
 		panic("unknown board: use points, net, sharp, streak or style")
 	}
 	if limit <= 0 || limit > maxBoardRows {
 		limit = maxBoardRows
 	}
 	var rows []boardRow
-	players.Iterate("", "", func(k string, v any) bool {
-		p := v.(*Player)
-		if name == "sharp" && p.Scored == 0 {
-			return false
-		}
-		r := boardRow{addr: address(k), p: p}
-		// insertion sort, keeping at most limit rows
-		i := len(rows)
-		for i > 0 && better(name, p, rows[i-1].p) {
-			i--
-		}
-		if i < limit {
-			rows = append(rows, boardRow{})
-			copy(rows[i+1:], rows[i:])
-			rows[i] = r
-			if len(rows) > limit {
-				rows = rows[:limit]
-			}
-		}
-		return false
+	boardIdx[idx].Iterate("", "", func(_ string, v any) bool {
+		a := v.(address)
+		rows = append(rows, boardRow{addr: a, p: players.Get(a.String()).(*Player)})
+		return len(rows) >= limit
 	})
 	return rows
 }

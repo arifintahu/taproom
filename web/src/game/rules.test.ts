@@ -13,11 +13,13 @@ const player = (p: Partial<Player> = {}): Player => ({
 const e = (addr: string, pick: number | null, revealed = pick !== null) => ({ addr, pick, revealed })
 
 describe('commit hash', () => {
-  it('matches node sha256 for the realm format "<pick>:<salt>"', () => {
+  it('matches node sha256 for the realm format "<round>:<player>:<pick>:<salt>"', () => {
     for (const t of ['', 'abc', '22:salt', 'x'.repeat(200), 'ünï']) {
       expect(sha256Hex(t)).toBe(createHash('sha256').update(t).digest('hex'))
     }
-    expect(commitHash(22, 's')).toBe(createHash('sha256').update('22:s').digest('hex'))
+    expect(commitHash(3, 'g1abc', 22, 's')).toBe(createHash('sha256').update('3:g1abc:22:s').digest('hex'))
+    expect(commitHash(3, 'g1abc', 22, 's')).not.toBe(commitHash(3, 'g1xyz', 22, 's'))
+    expect(commitHash(3, 'g1abc', 22, 's')).not.toBe(commitHash(4, 'g1abc', 22, 's'))
   })
 })
 
@@ -112,6 +114,15 @@ describe('streak', () => {
       streakOnPlay(b, 10 + gap)
       expect(b).toEqual(a)
     }
+  })
+
+  it('freezes bought after a reset are kept: the next play restarts at 1 without spending them', () => {
+    const p = player({ streak: 1, lastWeek: 0 })
+    applyMissedWeeks(p, 5) // 4 missed, no freezes: streak 0
+    expect(p.streak).toBe(0)
+    p.freezes = 2 // bought in week 5
+    streakOnPlay(p, 7)
+    expect([p.streak, p.freezes]).toEqual([1, 2])
   })
 
   it('ranks by lifetime points', () => {

@@ -18,7 +18,7 @@ done
 
 deploy() { # <dir> <package path>
   echo "deploying $2"
-  echo "" | gnokey maketx addpkg -pkgdir "$WORK/$1" -pkgpath "$2" -gas-fee 1000000ugnot -gas-wanted 120000000 \
+  echo "" | gnokey maketx addpkg -pkgdir "$WORK/$1" -pkgpath "$2" -gas-fee 1000000ugnot -gas-wanted 150000000 \
     -chainid "$CHAIN" -remote "$RPC" -broadcast -insecure-password-stdin mywallet 2>&1 | grep -E "OK!|GAS USED|STORAGE|Error|error" | head -5
 }
 echo "chain up"

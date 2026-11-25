@@ -21,7 +21,12 @@ func fund() {
 }
 
 func reset() {
-	rounds = nil
+	roundTree = avl.NewTree()
+	roundCount = 0
+	openRounds = avl.NewTree()
+	openByCreator = avl.NewTree()
+	recentSettled = nil
+	boardIdx = newBoardIdx()
 	players = avl.NewTree()
 	claimable = avl.NewTree()
 	nowOverride = 0
@@ -82,13 +87,13 @@ func TestFullRoundPaysClosestToTwoThirds(cur realm, t *testing.T) {
 
 	testing.SetRealm(testing.NewUserRealm(alice))
 	fund()
-	Join(cross(cur), id, CommitHash(10, "sa"))
+	Join(cross(cur), id, CommitHash(id, alice, 10, "sa"))
 	testing.SetRealm(testing.NewUserRealm(bob))
 	fund()
-	Join(cross(cur), id, CommitHash(50, "sb"))
+	Join(cross(cur), id, CommitHash(id, bob, 50, "sb"))
 	testing.SetRealm(testing.NewUserRealm(carol))
 	fund()
-	Join(cross(cur), id, CommitHash(90, "sc"))
+	Join(cross(cur), id, CommitHash(id, carol, 90, "sc"))
 
 	nowOverride = 1150
 	testing.SetRealm(testing.NewUserRealm(alice))
@@ -106,7 +111,7 @@ func TestFullRoundPaysClosestToTwoThirds(cur realm, t *testing.T) {
 	uassert.Equal(t, int64(0), Claimable(carol))
 	// 0.5% of a 3,000,000 pot
 	uassert.Equal(t, int64(15000), feesAccrued)
-	uassert.Equal(t, int64(15000), rounds[id].Fee)
+	uassert.Equal(t, int64(15000), getRound(id).Fee)
 	assertSolvent(t)
 
 	testing.SetRealm(testing.NewUserRealm(bob))
@@ -140,13 +145,13 @@ func TestNonRevealerForfeitsToWinner(cur realm, t *testing.T) {
 
 	testing.SetRealm(testing.NewUserRealm(alice))
 	fund()
-	Join(cross(cur), id, CommitHash(10, "sa"))
+	Join(cross(cur), id, CommitHash(id, alice, 10, "sa"))
 	testing.SetRealm(testing.NewUserRealm(bob))
 	fund()
-	Join(cross(cur), id, CommitHash(50, "sb"))
+	Join(cross(cur), id, CommitHash(id, bob, 50, "sb"))
 	testing.SetRealm(testing.NewUserRealm(carol))
 	fund()
-	Join(cross(cur), id, CommitHash(20, "sc"))
+	Join(cross(cur), id, CommitHash(id, carol, 20, "sc"))
 
 	nowOverride = 2150
 	testing.SetRealm(testing.NewUserRealm(alice))
@@ -173,10 +178,10 @@ func TestVoidRoundRefundsEveryone(cur realm, t *testing.T) {
 
 	testing.SetRealm(testing.NewUserRealm(alice))
 	fund()
-	Join(cross(cur), id, CommitHash(10, "sa"))
+	Join(cross(cur), id, CommitHash(id, alice, 10, "sa"))
 	testing.SetRealm(testing.NewUserRealm(bob))
 	fund()
-	Join(cross(cur), id, CommitHash(50, "sb"))
+	Join(cross(cur), id, CommitHash(id, bob, 50, "sb"))
 
 	nowOverride = 3150
 	testing.SetRealm(testing.NewUserRealm(alice))
@@ -187,7 +192,7 @@ func TestVoidRoundRefundsEveryone(cur realm, t *testing.T) {
 	uassert.Equal(t, entryFee, Claimable(bob))
 	// a void (cancelled) round pays no fee
 	uassert.Equal(t, int64(0), feesAccrued)
-	uassert.Equal(t, int64(0), rounds[id].Fee)
+	uassert.Equal(t, int64(0), getRound(id).Fee)
 	assertSolvent(t)
 }
 
@@ -201,7 +206,7 @@ func TestVoidRoundGivesNoPoints(cur realm, t *testing.T) {
 
 	testing.SetRealm(testing.NewUserRealm(solo))
 	fund()
-	Join(cross(cur), id, CommitHash(10, "s"))
+	Join(cross(cur), id, CommitHash(id, solo, 10, "s"))
 	nowOverride = 7150
 	Reveal(cross(cur), id, 10, "s")
 	nowOverride = 7250
@@ -226,10 +231,10 @@ func TestPointsAtSettleUseRevealWeek(cur realm, t *testing.T) {
 
 	testing.SetRealm(testing.NewUserRealm(a))
 	fund()
-	Join(cross(cur), id, CommitHash(10, "sa"))
+	Join(cross(cur), id, CommitHash(id, a, 10, "sa"))
 	testing.SetRealm(testing.NewUserRealm(b))
 	fund()
-	Join(cross(cur), id, CommitHash(50, "sb"))
+	Join(cross(cur), id, CommitHash(id, b, 50, "sb"))
 
 	nowOverride = monday + week - 150 // still Sunday
 	testing.SetRealm(testing.NewUserRealm(a))
@@ -272,10 +277,10 @@ func TestOutOfOrderSettleKeepsStreak(cur realm, t *testing.T) {
 	ra := NewRound(cross(cur), 500, 50000, 0)
 	testing.SetRealm(testing.NewUserRealm(a))
 	fund()
-	Join(cross(cur), ra, CommitHash(10, "a1"))
+	Join(cross(cur), ra, CommitHash(ra, a, 10, "a1"))
 	testing.SetRealm(testing.NewUserRealm(b))
 	fund()
-	Join(cross(cur), ra, CommitHash(50, "b1"))
+	Join(cross(cur), ra, CommitHash(ra, b, 50, "b1"))
 	nowOverride = monday + week - 400 // still Sunday
 	testing.SetRealm(testing.NewUserRealm(a))
 	Reveal(cross(cur), ra, 10, "a1")
@@ -287,10 +292,10 @@ func TestOutOfOrderSettleKeepsStreak(cur realm, t *testing.T) {
 	rb := NewRound(cross(cur), 100, 100, 0)
 	testing.SetRealm(testing.NewUserRealm(a))
 	fund()
-	Join(cross(cur), rb, CommitHash(10, "a2"))
+	Join(cross(cur), rb, CommitHash(rb, a, 10, "a2"))
 	testing.SetRealm(testing.NewUserRealm(b))
 	fund()
-	Join(cross(cur), rb, CommitHash(50, "b2"))
+	Join(cross(cur), rb, CommitHash(rb, b, 50, "b2"))
 	nowOverride = monday + week + 250
 	testing.SetRealm(testing.NewUserRealm(a))
 	Reveal(cross(cur), rb, 10, "a2")
@@ -328,13 +333,13 @@ func TestTieSplitWithRemainderAndFee(cur realm, t *testing.T) {
 
 	testing.SetRealm(testing.NewUserRealm(a))
 	fund()
-	Join(cross(cur), id, CommitHash(10, "sa"))
+	Join(cross(cur), id, CommitHash(id, a, 10, "sa"))
 	testing.SetRealm(testing.NewUserRealm(b))
 	fund()
-	Join(cross(cur), id, CommitHash(10, "sb"))
+	Join(cross(cur), id, CommitHash(id, b, 10, "sb"))
 	testing.SetRealm(testing.NewUserRealm(c))
 	fund()
-	Join(cross(cur), id, CommitHash(90, "sc"))
+	Join(cross(cur), id, CommitHash(id, c, 90, "sc"))
 
 	nowOverride = 5150
 	testing.SetRealm(testing.NewUserRealm(a))
@@ -372,10 +377,10 @@ func TestWithdrawFees(cur realm, t *testing.T) {
 	b := testutils.TestAddress("wf-b")
 	testing.SetRealm(testing.NewUserRealm(a))
 	fund()
-	Join(cross(cur), id, CommitHash(10, "sa"))
+	Join(cross(cur), id, CommitHash(id, a, 10, "sa"))
 	testing.SetRealm(testing.NewUserRealm(b))
 	fund()
-	Join(cross(cur), id, CommitHash(50, "sb"))
+	Join(cross(cur), id, CommitHash(id, b, 50, "sb"))
 	nowOverride = 6150
 	testing.SetRealm(testing.NewUserRealm(a))
 	Reveal(cross(cur), id, 10, "sa")
@@ -406,12 +411,12 @@ func TestRejections(cur realm, t *testing.T) {
 	// wrong amount
 	testing.SetRealm(testing.NewUserRealm(alice))
 	testing.SetOriginSend(chain.NewCoins(chain.NewCoin("ugnot", entryFee-1)))
-	uassert.AbortsContains(t, cur, "exact", func() { Join(cross(cur), id, CommitHash(1, "x")) })
+	uassert.AbortsContains(t, cur, "exact", func() { Join(cross(cur), id, CommitHash(id, alice, 1, "x")) })
 
 	fund()
-	Join(cross(cur), id, CommitHash(10, "sa"))
+	Join(cross(cur), id, CommitHash(id, alice, 10, "sa"))
 	// double join
-	uassert.AbortsContains(t, cur, "already joined", func() { Join(cross(cur), id, CommitHash(1, "x")) })
+	uassert.AbortsContains(t, cur, "already joined", func() { Join(cross(cur), id, CommitHash(id, alice, 1, "x")) })
 
 	// reveal too early
 	uassert.AbortsContains(t, cur, "not in reveal window", func() { Reveal(cross(cur), id, 10, "sa") })
@@ -424,7 +429,7 @@ func TestRejections(cur realm, t *testing.T) {
 	uassert.AbortsContains(t, cur, "not a player", func() { Reveal(cross(cur), id, 10, "sa") })
 	// join after commit window
 	testing.SetOriginSend(chain.NewCoins(chain.NewCoin("ugnot", entryFee)))
-	uassert.AbortsContains(t, cur, "closed", func() { Join(cross(cur), id, CommitHash(1, "x")) })
+	uassert.AbortsContains(t, cur, "closed", func() { Join(cross(cur), id, CommitHash(id, bob, 1, "x")) })
 	// settle too early
 	uassert.AbortsContains(t, cur, "still open", func() { Settle(cross(cur), id) })
 }
@@ -481,4 +486,34 @@ func TestStreakBonusFreezeAndReset(cur realm, t *testing.T) {
 	_, _, streak, freezes = PlayerStats(a)
 	uassert.Equal(t, int64(1), streak)
 	uassert.Equal(t, 0, freezes)
+}
+
+// A commit is bound to its round and its player: a copied hash cannot be opened by the copier,
+// and a hash from one round cannot be reused in another.
+func TestCopiedCommitCannotBeRevealed(cur realm, t *testing.T) {
+	reset()
+	nowOverride = 5000
+	id := NewRound(cross(cur), 100, 100, 0)
+	other := NewRound(cross(cur), 100, 100, 0)
+	victim := testutils.TestAddress("victim")
+	copier := testutils.TestAddress("copier")
+
+	testing.SetRealm(testing.NewUserRealm(victim))
+	fund()
+	h := CommitHash(id, victim, 20, "secret")
+	Join(cross(cur), id, h)
+
+	testing.SetRealm(testing.NewUserRealm(copier))
+	fund()
+	Join(cross(cur), id, h) // the hash is public; joining with it is allowed
+	fund()
+	Join(cross(cur), other, h)
+
+	nowOverride = 5150
+	testing.SetRealm(testing.NewUserRealm(victim))
+	Reveal(cross(cur), id, 20, "secret")
+
+	testing.SetRealm(testing.NewUserRealm(copier))
+	uassert.AbortsContains(t, cur, "does not match", func() { Reveal(cross(cur), id, 20, "secret") })
+	uassert.AbortsContains(t, cur, "does not match", func() { Reveal(cross(cur), other, 20, "secret") })
 }

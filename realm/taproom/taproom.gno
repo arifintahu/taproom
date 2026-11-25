@@ -103,13 +103,36 @@ type Player struct {
 	Scored     int64 // revealed picks in completed rounds
 	DistSum100 int64 // sum of distances to the target in those rounds, in hundredths
 	BestStreak int64 // longest weekly streak reached
+
+	Joined    bool               // has joined a round; only such players are listed on boards
+	boardKeys [boardCount]string // this player's key in each board index; "" = not listed
 }
 
 var (
-	rounds    []*Round
-	players   = avl.NewTree() // address -> *Player
-	claimable = avl.NewTree() // address -> int64
+	roundTree     = avl.NewTree() // roundKey(id) -> *Round
+	roundCount    int
+	openRounds    = avl.NewTree() // roundKey(id) -> true while the round is not settled
+	openByCreator = avl.NewTree() // address -> int, open rounds per creator (the 3-round cap)
+	recentSettled []int           // the last 5 settled round IDs, oldest first
+	players       = avl.NewTree() // address -> *Player
+	claimable     = avl.NewTree() // address -> int64
 )
+
+// roundKey pads round IDs so the tree keeps them in numeric order.
+func roundKey(id int) string {
+	s := strconv.Itoa(id)
+	for len(s) < 10 {
+		s = "0" + s
+	}
+	return s
+}
+
+func openCount(a address) int {
+	if v := openByCreator.Get(a.String()); v != nil {
+		return v.(int)
+	}
+	return 0
+}
 
 func now() int64 {
 	if nowOverride != 0 {
@@ -128,9 +151,16 @@ func weekIndex(ts int64) int64 {
 	return w
 }
 
-// CommitHash is the value a player submits when joining: sha256("<pick>:<salt>") as hex.
-func CommitHash(pick int64, salt string) string {
-	return commitreveal.Hash(strconv.FormatInt(pick, 10), salt)
+// CommitHash is the value a player submits when joining round roundID:
+// hex(sha256("<roundID>:<player address>:<pick>:<salt>")). Binding the round and the player means
+// a hash copied from someone else's Join cannot be opened by the copier, nor reused in another round.
+func CommitHash(roundID int, player address, pick int64, salt string) string {
+	return commitreveal.Hash(sealedValue(roundID, player, pick), salt)
+}
+
+// sealedValue is what a round's Seal commits to for a player's pick.
+func sealedValue(roundID int, player address, pick int64) string {
+	return strconv.Itoa(roundID) + ":" + player.String() + ":" + strconv.FormatInt(pick, 10)
 }
 
 func mustUser(cur realm) address {
@@ -141,10 +171,10 @@ func mustUser(cur realm) address {
 }
 
 func getRound(id int) *Round {
-	if id < 0 || id >= len(rounds) {
+	if id < 0 || id >= roundCount {
 		panic("unknown round")
 	}
-	return rounds[id]
+	return roundTree.Get(roundKey(id)).(*Round)
 }
 
 func getPlayer(a address) *Player {
@@ -196,18 +226,13 @@ func NewRound(cur realm, commitSecs, revealSecs int64, boardSkin int) int {
 	if !ownsSkin(creator, boardSkin) {
 		panic("creator does not own this board skin")
 	}
-	open := 0
-	for _, r := range rounds {
-		if r.Creator == creator && !r.Settled {
-			open++
-		}
-	}
+	open := openCount(creator)
 	if open >= maxOpenRounds {
 		panic("you already have 3 open rounds")
 	}
 	t := now()
 	r := &Round{
-		ID:        len(rounds),
+		ID:        roundCount,
 		Creator:   creator,
 		Start:     t,
 		Seal:      commitreveal.New(t, commitSecs, revealSecs),
@@ -216,7 +241,10 @@ func NewRound(cur realm, commitSecs, revealSecs int64, boardSkin int) int {
 		Num:       targetNum,
 		Den:       targetDen,
 	}
-	rounds = append(rounds, r)
+	roundTree.Set(roundKey(r.ID), r)
+	roundCount++
+	openRounds.Set(roundKey(r.ID), true)
+	openByCreator.Set(creator.String(), open+1)
 	return r.ID
 }
 
@@ -242,7 +270,10 @@ func Join(cur realm, roundID int, commit string) {
 		panic(err.Error())
 	}
 	r.Pot += entryFee
-	getPlayer(caller).Net -= entryFee
+	pl := getPlayer(caller)
+	pl.Net -= entryFee
+	pl.Joined = true
+	reindex(caller)
 }
 
 // Reveal opens the pick; it must match the commit. It moves the streak (in block-time order)
@@ -254,10 +285,11 @@ func Reveal(cur realm, roundID int, pick int64, salt string) {
 	if pick < 0 || pick > 100 {
 		panic("pick must be 0..100")
 	}
-	if err := r.Seal.Reveal(t, caller, strconv.FormatInt(pick, 10), salt); err != nil {
+	if err := r.Seal.Reveal(t, caller, sealedValue(roundID, caller, pick), salt); err != nil {
 		panic(err.Error())
 	}
 	r.Entries.Set(caller.String(), &Entry{Pick: pick, Bonus: updateStreak(caller, t)})
+	reindex(caller)
 }
 
 // Settle can be called by anyone once the reveal window has closed.
@@ -270,6 +302,17 @@ func Settle(cur realm, roundID int) {
 		panic("already settled")
 	}
 	r.Settled = true // effects before any payout bookkeeping
+	openRounds.Remove(roundKey(r.ID))
+	openByCreator.Set(r.Creator.String(), openCount(r.Creator)-1)
+	recentSettled = append(recentSettled, r.ID)
+	if len(recentSettled) > 5 {
+		recentSettled = recentSettled[len(recentSettled)-5:]
+	}
+	defer func() { // board positions move with the credits and points below
+		for _, p := range r.Seal.Players() {
+			reindex(p)
+		}
+	}()
 
 	var revealers []address
 	var sum int64
@@ -373,7 +416,10 @@ func updateStreak(a address, ts int64) int64 {
 	} else {
 		g := w - p.LastWeek
 		if g >= 1 {
-			if g == 1 {
+			if p.Streak == 0 {
+				// the streak was already reset for missed weeks: start again, keep any freezes
+				p.Streak = 1
+			} else if g == 1 {
 				p.Streak++
 			} else {
 				missed := int(g - 1)
@@ -515,6 +561,7 @@ func Equip(cur realm, slot int, itemID int) {
 		}
 	}
 	p.Equipped[slot] = itemID
+	reindex(caller)
 }
 
 // Views (non-crossing)

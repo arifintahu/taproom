@@ -28,8 +28,8 @@ func Render(path string) string {
 	case len(parts) == 2 && parts[0] == "player":
 		return renderPlayer(address(parts[1]))
 	case len(parts) == 2 && parts[0] == "round":
-		if id, err := strconv.Atoi(parts[1]); err == nil && id >= 0 && id < len(rounds) {
-			return renderRound(rounds[id])
+		if id, err := strconv.Atoi(parts[1]); err == nil && id >= 0 && id < roundCount {
+			return renderRound(getRound(id))
 		}
 	}
 	return "# Not found\n\nNo such page. [Back to the taproom](" + link("") + ")\n"
@@ -42,26 +42,22 @@ func renderHome() string {
 
 	sb.WriteString("## Open tables\n\n")
 	open := 0
-	for i := len(rounds) - 1; i >= 0 && open < 10; i-- {
-		r := rounds[i]
-		if r.Settled {
-			continue
-		}
+	openRounds.ReverseIterate("", "", func(k string, _ any) bool {
+		id, _ := strconv.Atoi(k)
+		r := getRound(id)
 		open++
 		sb.WriteString("- [Round " + strconv.Itoa(r.ID) + "](" + link("round/"+strconv.Itoa(r.ID)) + "): " +
 			strconv.Itoa(r.Seal.Count()) + " of " + strconv.Itoa(maxPlayers) + " seats, pot " + gnot(r.Pot) + ", " + phaseLine(r, t) + "\n")
-	}
+		return open >= 10
+	})
 	if open == 0 {
 		sb.WriteString("No open tables right now.\n")
 	}
 
 	sb.WriteString("\n## Recent results\n\n")
 	shown := 0
-	for i := len(rounds) - 1; i >= 0 && shown < 5; i-- {
-		r := rounds[i]
-		if !r.Settled {
-			continue
-		}
+	for i := len(recentSettled) - 1; i >= 0; i-- {
+		r := getRound(recentSettled[i])
 		shown++
 		sb.WriteString("- [Round " + strconv.Itoa(r.ID) + "](" + link("round/"+strconv.Itoa(r.ID)) + "): " + resultLine(r) + "\n")
 	}

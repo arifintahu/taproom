@@ -20,8 +20,8 @@ func TestNewRoundBoundsCreatorAndOpenCap(cur realm, t *testing.T) {
 	uassert.AbortsContains(t, cur, "1 minute to 24 hours", func() { NewRound(cross(cur), 120, 86401, 0) })
 
 	a := NewRound(cross(cur), 60, 86400, 0)
-	uassert.Equal(t, int64(9000), rounds[a].Start)
-	uassert.Equal(t, u, rounds[a].Creator)
+	uassert.Equal(t, int64(9000), getRound(a).Start)
+	uassert.Equal(t, u, getRound(a).Creator)
 	NewRound(cross(cur), 120, 120, 0)
 	NewRound(cross(cur), 120, 120, 0)
 	uassert.AbortsContains(t, cur, "3 open rounds", func() { NewRound(cross(cur), 120, 120, 0) })
@@ -40,12 +40,12 @@ func TestJoinPlayerCap(cur realm, t *testing.T) {
 	for i := 0; i < maxPlayers; i++ {
 		testing.SetRealm(testing.NewUserRealm(testutils.TestAddress("cap" + strconv.Itoa(i))))
 		fund()
-		Join(cross(cur), id, CommitHash(int64(i), "s"))
+		Join(cross(cur), id, CommitHash(id, testutils.TestAddress("cap"+strconv.Itoa(i)), int64(i), "s"))
 	}
 	testing.SetRealm(testing.NewUserRealm(testutils.TestAddress("cap-late")))
 	fund()
-	uassert.AbortsContains(t, cur, "round is full", func() { Join(cross(cur), id, CommitHash(1, "s")) })
-	uassert.Equal(t, int64(maxPlayers)*entryFee, rounds[id].Pot)
+	uassert.AbortsContains(t, cur, "round is full", func() { Join(cross(cur), id, CommitHash(id, testutils.TestAddress("cap-late"), 1, "s")) })
+	uassert.Equal(t, int64(maxPlayers)*entryFee, getRound(id).Pot)
 }
 
 // Item IDs: itemID = slotBase + n (hat 100, outfit 200, held 300, companion 400), n = 1..12,
@@ -127,7 +127,7 @@ func TestViewsJSON(cur realm, t *testing.T) {
 	testing.SetRealm(testing.NewUserRealm(u))
 	id := NewRound(cross(cur), 100, 100, 0)
 	fund()
-	Join(cross(cur), id, CommitHash(22, "salt"))
+	Join(cross(cur), id, CommitHash(id, u, 22, "salt"))
 
 	uassert.Equal(t, 1, RoundCount())
 	js := RoundsJSON(0, 10)
