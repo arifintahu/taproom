@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "screenshots": "playwright test --config playwright.screens.config.ts"
   },
   "dependencies": {
     "@gnolang/gno-js-client": "^3.1.0",
