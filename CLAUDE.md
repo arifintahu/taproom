@@ -10,6 +10,7 @@ The rules and numbers live in the code: `web/src/game/constants.ts` and `rules.t
 |---|---|
 | `realm/` | A `gnowork.toml` workspace, so packages here import each other in tests |
 | `realm/commitreveal/` | Gno package `gno.land/p/<owner>/commitreveal`: commit-reveal sessions (windows, commits, reveals, who did not reveal). No coins, no global state. `example_test.gno` is the README sample |
+| `realm/sealedpoll/` | Gno realm `gno.land/r/<owner>/sealedpoll`: sealed polls (`NewPoll`, `Vote`, `Open`, `Tally`, `Render`), a second realm on `commitreveal` showing the package is reusable. No coins |
 | `realm/taproom/` | Gno realm. `taproom.gno` (engine, payouts, points, streak, cosmetics; each round's `Seal` is a `commitreveal.Session`), `views.gno` (JSON views for the UI), `*_test.gno` |
 | `realm/scripts/` | Bash scripts that need the Gno toolchain: `test.sh`, `local-start.sh`, `local-fund.sh`, `local-bot.sh`, `local-probe.sh`, `local-stop.sh` |
 | `web/src/game/` | Pure logic: `rules.ts` (settle maths, streak), `constants.ts`, `selectors.ts` (blockers, Confirm rows), `room.ts`, `closeup.ts`, `panels.ts`, `hall.ts`, `avatar.ts`, `commit.ts` |
@@ -30,7 +31,7 @@ Realm (needs the Gno toolchain v1.8: `gno`, `gnokey`, `gnodev`; the scripts look
 bash realm/scripts/test.sh    # every package in the workspace
 ```
 
-Deploy order matters: `commitreveal` before the realm that imports it (`local-start.sh` does this). A change to `commitreveal` needs a new package path on a public network, and the realm import must follow it.
+Deploy order matters: `commitreveal` before the realm that imports it (`local-start.sh` deploys `commitreveal`, then `taproom` and `sealedpoll`). A change to `commitreveal` needs a new package path on a public network, and the realm import must follow it.
 
 Local chain: run `local-start.sh` in its own terminal or as a background task; it stays attached to `gnodev` until stopped. Then open `http://localhost:5173/?chain=local` (dev key) or `?chain=local&signer=adena`.
 

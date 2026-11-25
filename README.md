@@ -71,6 +71,7 @@ On narrow screens the room scrolls sideways and the Places row below it reaches 
 taproom/
   realm/commitreveal/  Gno package: the commit-reveal lifecycle for any sealed choice (importable)
   realm/taproom/       Gno realm: rounds, stakes, payouts, points, streaks, freezes, cosmetics, JSON views
+  realm/sealedpoll/    Gno realm: sealed polls, a second realm built on commitreveal
   realm/scripts/       local gnodev chain: start, deploy, fund test keys, play scripted regulars
   web/             Vite + React + TypeScript app
     src/game/      rules and settle maths, streak, catalogue, avatars, selectors, scene layout
@@ -107,7 +108,9 @@ for _, o := range poll.Revealed() { // opened values, in commit order
 late := poll.Unrevealed() // committed but never opened
 ```
 
-The API: `New`, `Phase` (commit, reveal, closed), `Commit`, `Reveal`, `Has`, `Count`, `IsRevealed`, `Value`, `Players`, `Revealed`, `Unrevealed`, plus `Hash` and `Verify`. Errors are exported values (`ErrCommitClosed`, `ErrMismatch`, ...). The full sealed-poll example is `realm/commitreveal/example_test.gno`.
+The API: `New`, `Phase` (commit, reveal, closed), `Commit`, `Reveal`, `Has`, `Count`, `IsRevealed`, `Value`, `Players`, `Revealed`, `Unrevealed`, plus `Hash` and `Verify`. Errors are exported values (`ErrCommitClosed`, `ErrMismatch`, ...). The shortest example is `realm/commitreveal/example_test.gno`.
+
+`realm/sealedpoll` (`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll`) is a second realm built on the package, in about 200 lines. Anyone opens a question with 2 to 8 options (`NewPoll`), voters seal a choice (`Vote` with `commitreveal.Hash(option, salt)`), then open it (`Open`). `Tally` returns the counts as JSON, and `Render` lists every poll with its results and the number of sealed votes never opened. It holds no coins: every window, vote and reveal rule comes from `commitreveal`.
 
 ## Run it
 
@@ -126,7 +129,7 @@ pnpm dev                  # http://localhost:5173, runs on MockChain
 Local chain:
 
 ```bash
-bash realm/scripts/local-start.sh             # starts gnodev, deploys commitreveal then the realm; keep it running
+bash realm/scripts/local-start.sh             # starts gnodev, deploys commitreveal, the realm and sealedpoll; keep it running
 bash realm/scripts/local-fund.sh <g1address>  # sends 100 test GNOT from a premined test key
 bash realm/scripts/local-bot.sh join p2 0 33  # another regular joins round 0 with pick 33
 bash realm/scripts/local-stop.sh
@@ -135,7 +138,7 @@ bash realm/scripts/local-stop.sh
 ## Tests
 
 ```bash
-bash realm/scripts/test.sh    # Gno tests: commitreveal (7) and the realm (19)
+bash realm/scripts/test.sh    # Gno tests: commitreveal (7), the realm (19), sealedpoll (2)
 cd web
 pnpm test                     # Vitest: rules, settle invariants, scenarios S1-S13, chain adapters (81)
 pnpm test:e2e                 # Playwright: room, full round, Confirm sheet paths, shop, practice (8)
