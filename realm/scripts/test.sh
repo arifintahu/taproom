@@ -1,7 +1,8 @@
 #!/bin/bash
-# Runs the realm unit tests in WSL (Gno has no native Windows build).
-export PATH="$HOME/.gno/bin:$PATH"
-export GNOROOT="$HOME/.gno/src"
+# Runs the realm unit tests. Needs the Gno toolchain (gno on PATH or in $GNO_HOME/bin).
+GNO_HOME="${GNO_HOME:-$HOME/.gno}"
+export PATH="$GNO_HOME/bin:$PATH"
+export GNOROOT="${GNOROOT:-$GNO_HOME/src}"
 SRC="$(cd "$(dirname "$0")/.." && pwd)/taproom"
 rm -rf "$HOME/taproom-realm"
 mkdir -p "$HOME/taproom-realm"

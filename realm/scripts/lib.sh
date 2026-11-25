@@ -1,7 +1,8 @@
 #!/bin/bash
-# Shared helpers for the local gnodev chain (sourced). Run everything inside WSL.
-export PATH="$HOME/.gno/bin:$PATH"
-export GNOROOT="$HOME/.gno/src"
+# Shared helpers for the local gnodev chain (sourced). Needs the Gno toolchain: gno, gnokey, gnodev.
+GNO_HOME="${GNO_HOME:-$HOME/.gno}"
+export PATH="$GNO_HOME/bin:$PATH"
+export GNOROOT="${GNOROOT:-$GNO_HOME/src}"
 OWNER=g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq
 PKG="gno.land/r/$OWNER/taproom"
 RPC="${RPC:-127.0.0.1:26657}"
