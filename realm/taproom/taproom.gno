@@ -1,0 +1,560 @@
+package taproom
+
+// Taproom realm: 2/3 Game round engine with stakes, commit-reveal,
+// permissionless settlement, pull payouts, and a time-window weekly streak.
+
+import (
+	"chain"
+	"chain/banker"
+	"chain/runtime/unsafe"
+	"crypto/sha256"
+	"encoding/hex"
+	"strconv"
+	"strings"
+	"time"
+
+	"gno.land/p/nt/avl/v0"
+)
+
+const (
+	denom       = "ugnot"
+	weekSeconds = int64(604800)
+	// Unix time zero fell on a Thursday; 4 days shifts week boundaries to Monday 00:00 UTC.
+	weekOffset = int64(345600)
+
+	pointsPlay = int64(10)
+	pointsWin  = int64(30)
+	streakStep = int64(4)
+	streakCap  = int64(20)
+	freezeCost = int64(40)
+	maxFreezes = 2
+
+	// Caps (spec 6.2 and 15): players per round, open rounds per creator, window bounds.
+	maxPlayers    = 10
+	maxOpenRounds = 3
+	minWindow     = int64(60)
+	maxWindow     = int64(86400)
+
+	// Cosmetic slots: hat, outfit, held item, companion (Player.Equipped order).
+	slotCount = 4
+
+	// Board skins (D15): 0 = Oak table (free, owned by everyone), 1 = Moonlit, 2 = Gold-trim.
+	skinCount = 3
+
+	// Target fraction of the average (D14): fixed at 2/3 in the MVP, stored per round.
+	targetNum = int64(2)
+	targetDen = int64(3)
+
+	// Protocol fee in basis points (50 = 0.5%), taken from the pot of a completed round only.
+	feeBps   = int64(50)
+	bpsTotal = int64(10000)
+)
+
+var entryFee int64 = 1000000
+
+// skinPrice is the points price per board skin ID; Oak (0) is free.
+var skinPrice = []int64{0, 150, 400}
+
+var (
+	feeRecipient address // set once at deploy; can only withdraw accrued fees
+	feesAccrued  int64
+)
+
+func init() {
+	feeRecipient = unsafe.OriginCaller()
+}
+
+// nowOverride lets tests control time; zero means use the block time.
+var nowOverride int64
+
+type Entry struct {
+	Commit   string
+	Revealed bool
+	Pick     int64
+	Bonus    int64 // streak bonus earned at reveal; paid only if the round completes
+}
+
+type Round struct {
+	ID        int
+	Creator   address
+	Start     int64
+	CommitEnd int64
+	RevealEnd int64
+	Players   []address
+	Entries   *avl.Tree // address -> *Entry
+	Settled   bool
+	Pot       int64
+	Fee       int64
+	Winners   []address
+	BoardSkin int
+	Num, Den  int64 // target fraction of the average; 2/3 in the MVP
+}
+
+type Player struct {
+	Lifetime  int64
+	Spent     int64
+	HasPlayed bool
+	LastWeek  int64
+	Streak    int64
+	Freezes   int
+	Skins     []int  // owned board skins other than the free Oak table
+	Owned     []int  // cosmetic item IDs
+	Equipped  [4]int // item ID per slot (hat, outfit, held, companion); 0 = nothing
+}
+
+var (
+	rounds    []*Round
+	players   = avl.NewTree() // address -> *Player
+	claimable = avl.NewTree() // address -> int64
+)
+
+func now() int64 {
+	if nowOverride != 0 {
+		return nowOverride
+	}
+	return time.Now().Unix()
+}
+
+// weekIndex returns the Monday-00:00-UTC-aligned week number of a Unix timestamp.
+func weekIndex(ts int64) int64 {
+	d := ts - weekOffset
+	w := d / weekSeconds
+	if d%weekSeconds < 0 {
+		w--
+	}
+	return w
+}
+
+// CommitHash is the value a player submits when joining: sha256("<pick>:<salt>") as hex.
+func CommitHash(pick int64, salt string) string {
+	sum := sha256.Sum256([]byte(strconv.FormatInt(pick, 10) + ":" + salt))
+	return hex.EncodeToString(sum[:])
+}
+
+func mustUser(cur realm) address {
+	if !cur.Previous().IsUserCall() {
+		panic("direct user call required")
+	}
+	return cur.Previous().Address()
+}
+
+func getRound(id int) *Round {
+	if id < 0 || id >= len(rounds) {
+		panic("unknown round")
+	}
+	return rounds[id]
+}
+
+func getPlayer(a address) *Player {
+	v := players.Get(a.String())
+	if v == nil {
+		p := &Player{}
+		players.Set(a.String(), p)
+		return p
+	}
+	return v.(*Player)
+}
+
+func credit(a address, amt int64) {
+	cur := int64(0)
+	if v := claimable.Get(a.String()); v != nil {
+		cur = v.(int64)
+	}
+	claimable.Set(a.String(), cur+amt)
+}
+
+// ownsSkin reports whether a may use a board skin: Oak (0) is free for everyone.
+func ownsSkin(a address, skin int) bool {
+	if skin == 0 {
+		return true
+	}
+	v := players.Get(a.String())
+	if v == nil {
+		return false
+	}
+	for _, s := range v.(*Player).Skins {
+		if s == skin {
+			return true
+		}
+	}
+	return false
+}
+
+// NewRound opens a round. commitSecs and revealSecs are window lengths in seconds.
+// The creator must own boardSkin (Oak table, ID 0, is owned by everyone).
+func NewRound(cur realm, commitSecs, revealSecs int64, boardSkin int) int {
+	if commitSecs < minWindow || revealSecs < minWindow || commitSecs > maxWindow || revealSecs > maxWindow {
+		panic("windows must be 1 minute to 24 hours")
+	}
+	if boardSkin < 0 || boardSkin >= skinCount {
+		panic("unknown board skin")
+	}
+	creator := cur.Previous().Address()
+	if !ownsSkin(creator, boardSkin) {
+		panic("creator does not own this board skin")
+	}
+	open := 0
+	for _, r := range rounds {
+		if r.Creator == creator && !r.Settled {
+			open++
+		}
+	}
+	if open >= maxOpenRounds {
+		panic("you already have 3 open rounds")
+	}
+	t := now()
+	r := &Round{
+		ID:        len(rounds),
+		Creator:   creator,
+		Start:     t,
+		CommitEnd: t + commitSecs,
+		RevealEnd: t + commitSecs + revealSecs,
+		Entries:   avl.NewTree(),
+		BoardSkin: boardSkin,
+		Num:       targetNum,
+		Den:       targetDen,
+	}
+	rounds = append(rounds, r)
+	return r.ID
+}
+
+// Join deposits the entry fee and stores a hidden pick.
+func Join(cur realm, roundID int, commit string) {
+	caller := mustUser(cur)
+	r := getRound(roundID)
+	if now() >= r.CommitEnd {
+		panic("commit window closed")
+	}
+	if len(commit) != 64 {
+		panic("commit must be 64 hex chars")
+	}
+	if r.Entries.Has(caller.String()) {
+		panic("already joined")
+	}
+	if len(r.Players) >= maxPlayers {
+		panic("round is full")
+	}
+	sent := unsafe.OriginSend()
+	if len(sent) != 1 || sent[0].Denom != denom || sent[0].Amount != entryFee {
+		panic("must send exactly the entry fee in ugnot")
+	}
+	r.Entries.Set(caller.String(), &Entry{Commit: commit})
+	r.Players = append(r.Players, caller)
+	r.Pot += entryFee
+}
+
+// Reveal opens the pick; it must match the commit. It moves the streak (in block-time order)
+// and records the bonus; points are paid at Settle, and only if the round completes.
+func Reveal(cur realm, roundID int, pick int64, salt string) {
+	caller := mustUser(cur)
+	r := getRound(roundID)
+	t := now()
+	if t < r.CommitEnd || t >= r.RevealEnd {
+		panic("not in reveal window")
+	}
+	v := r.Entries.Get(caller.String())
+	if v == nil {
+		panic("not a player in this round")
+	}
+	e := v.(*Entry)
+	if e.Revealed {
+		panic("already revealed")
+	}
+	if pick < 0 || pick > 100 {
+		panic("pick must be 0..100")
+	}
+	if CommitHash(pick, salt) != e.Commit {
+		panic("reveal does not match commit")
+	}
+	e.Revealed = true
+	e.Pick = pick
+	e.Bonus = updateStreak(caller, t)
+}
+
+// Settle can be called by anyone once the reveal window has closed.
+func Settle(cur realm, roundID int) {
+	r := getRound(roundID)
+	if now() < r.RevealEnd {
+		panic("reveal window still open")
+	}
+	if r.Settled {
+		panic("already settled")
+	}
+	r.Settled = true // effects before any payout bookkeeping
+
+	var revealers []address
+	var sum int64
+	for _, p := range r.Players {
+		e := r.Entries.Get(p.String()).(*Entry)
+		if e.Revealed {
+			revealers = append(revealers, p)
+			sum += e.Pick
+		}
+	}
+	n := int64(len(revealers))
+
+	// Fewer than two reveals: void round, everyone is refunded. No points.
+	if n < 2 {
+		for _, p := range r.Players {
+			credit(p, entryFee)
+		}
+		return
+	}
+
+	// Completed round: every revealer gets play points plus the bonus recorded at reveal.
+	for _, p := range revealers {
+		getPlayer(p).Lifetime += pointsPlay + r.Entries.Get(p.String()).(*Entry).Bonus
+	}
+
+	// Winner is closest to num/den of the average: minimise |den*n*pick - num*sum| (integer math).
+	best := int64(-1)
+	var winners []address
+	for _, p := range revealers {
+		e := r.Entries.Get(p.String()).(*Entry)
+		d := r.Den*n*e.Pick - r.Num*sum
+		if d < 0 {
+			d = -d
+		}
+		if best < 0 || d < best {
+			best = d
+			winners = []address{p}
+		} else if d == best {
+			winners = append(winners, p)
+		}
+	}
+
+	// Completed round (at least two reveals): take the fee, split the rest.
+	fee := r.Pot * feeBps / bpsTotal
+	r.Fee = fee
+	feesAccrued += fee
+	prize := r.Pot - fee
+
+	count := int64(len(winners))
+	share := prize / count
+	rem := prize - share*count
+	for i, w := range winners {
+		amt := share
+		if i == 0 {
+			amt += rem
+		}
+		credit(w, amt)
+		getPlayer(w).Lifetime += pointsWin - pointsPlay
+	}
+	r.Winners = winners
+}
+
+// Claim pays out the caller's balance (pull payment).
+func Claim(cur realm) {
+	caller := mustUser(cur)
+	v := claimable.Get(caller.String())
+	if v == nil || v.(int64) <= 0 {
+		panic("nothing to claim")
+	}
+	amt := v.(int64)
+	claimable.Set(caller.String(), int64(0)) // effects before interaction
+	bnk := banker.NewBanker(banker.BankerTypeRealmSend, cur)
+	bnk.SendCoins(cur.Address(), caller, chain.NewCoins(chain.NewCoin(denom, amt)))
+}
+
+// WithdrawFees sends accrued protocol fees to the fee recipient. It touches nothing else.
+func WithdrawFees(cur realm) {
+	caller := mustUser(cur)
+	if caller != feeRecipient {
+		panic("only the fee recipient can withdraw fees")
+	}
+	amt := feesAccrued
+	if amt <= 0 {
+		panic("no fees to withdraw")
+	}
+	feesAccrued = 0 // effects before interaction
+	bnk := banker.NewBanker(banker.BankerTypeRealmSend, cur)
+	bnk.SendCoins(cur.Address(), caller, chain.NewCoins(chain.NewCoin(denom, amt)))
+}
+
+// updateStreak moves the weekly streak for a play at ts and returns that play's bonus.
+// Calls arrive in block-time order because Reveal calls it.
+func updateStreak(a address, ts int64) int64 {
+	p := getPlayer(a)
+	w := weekIndex(ts)
+	if !p.HasPlayed {
+		p.Streak = 1
+		p.LastWeek = w
+	} else {
+		g := w - p.LastWeek
+		if g >= 1 {
+			if g == 1 {
+				p.Streak++
+			} else {
+				missed := int(g - 1)
+				if p.Freezes >= missed {
+					p.Freezes -= missed
+					p.Streak++
+				} else {
+					// not enough freezes: the streak resets and every held freeze is used up
+					p.Streak = 1
+					p.Freezes = 0
+				}
+			}
+			p.LastWeek = w
+		}
+	}
+	p.HasPlayed = true
+	bonus := streakStep * p.Streak
+	if bonus > streakCap {
+		bonus = streakCap
+	}
+	return bonus
+}
+
+// applyMissedWeeks spends freezes on weeks already missed before week w, as the next Reveal would.
+// With too few freezes the streak drops to 0 and every freeze is used up; the next play starts week 1.
+func applyMissedWeeks(p *Player, w int64) {
+	if !p.HasPlayed || p.Streak == 0 {
+		return
+	}
+	missed := int(w - p.LastWeek - 1)
+	if missed <= 0 {
+		return
+	}
+	if p.Freezes >= missed {
+		p.Freezes -= missed
+	} else {
+		p.Streak = 0
+		p.Freezes = 0
+	}
+	p.LastWeek = w - 1
+}
+
+// BuyFreeze spends points on a streak freeze (max 2 held). Weeks already missed are applied first,
+// so a new freeze cannot cover a past week and a stale count cannot block the purchase.
+func BuyFreeze(cur realm) {
+	caller := mustUser(cur)
+	p := getPlayer(caller)
+	applyMissedWeeks(p, weekIndex(now()))
+	if p.Freezes >= maxFreezes {
+		panic("freeze limit reached")
+	}
+	if p.Lifetime-p.Spent < freezeCost {
+		panic("not enough points")
+	}
+	p.Spent += freezeCost
+	p.Freezes++
+}
+
+// BuySkin spends points on a board skin (Moonlit or Gold-trim). Oak is free and always owned.
+func BuySkin(cur realm, skin int) {
+	caller := mustUser(cur)
+	if skin <= 0 || skin >= skinCount {
+		panic("unknown or free board skin")
+	}
+	if ownsSkin(caller, skin) {
+		panic("skin already owned")
+	}
+	p := getPlayer(caller)
+	price := skinPrice[skin]
+	if p.Lifetime-p.Spent < price {
+		panic("not enough points")
+	}
+	p.Spent += price
+	p.Skins = append(p.Skins, skin)
+}
+
+// itemPrice returns the points price of a cosmetic item, or -1 for an unknown ID.
+// itemID = slotBase + n with slotBase 100 hat, 200 outfit, 300 held, 400 companion and n = 1..12.
+// Rarity by n (handover 7.2): 1, 5, 6 common 40; 2, 7, 8 rare 150; 3, 9, 10 epic 400; 4, 11, 12 legendary 1000.
+func itemPrice(id int) int64 {
+	slot, n := id/100, id%100
+	if slot < 1 || slot > slotCount || n < 1 || n > 12 {
+		return -1
+	}
+	switch n {
+	case 1, 5, 6:
+		return 40
+	case 2, 7, 8:
+		return 150
+	case 3, 9, 10:
+		return 400
+	}
+	return 1000
+}
+
+func ownsItem(p *Player, id int) bool {
+	for _, o := range p.Owned {
+		if o == id {
+			return true
+		}
+	}
+	return false
+}
+
+// BuyItem spends points on a cosmetic item. Items cannot be traded and never affect outcomes.
+func BuyItem(cur realm, itemID int) {
+	caller := mustUser(cur)
+	price := itemPrice(itemID)
+	if price < 0 {
+		panic("unknown item")
+	}
+	p := getPlayer(caller)
+	if ownsItem(p, itemID) {
+		panic("item already owned")
+	}
+	if p.Lifetime-p.Spent < price {
+		panic("not enough points")
+	}
+	p.Spent += price
+	p.Owned = append(p.Owned, itemID)
+}
+
+// Equip wears an owned item in its slot (0 hat, 1 outfit, 2 held, 3 companion); itemID 0 takes it off.
+func Equip(cur realm, slot int, itemID int) {
+	caller := mustUser(cur)
+	if slot < 0 || slot >= slotCount {
+		panic("unknown slot")
+	}
+	p := getPlayer(caller)
+	if itemID != 0 {
+		if !ownsItem(p, itemID) {
+			panic("item not owned")
+		}
+		if itemID/100 != slot+1 {
+			panic("item does not fit this slot")
+		}
+	}
+	p.Equipped[slot] = itemID
+}
+
+// Views (non-crossing)
+
+func OwnsSkin(a address, skin int) bool { return ownsSkin(a, skin) }
+
+func Claimable(a address) int64 {
+	if v := claimable.Get(a.String()); v != nil {
+		return v.(int64)
+	}
+	return 0
+}
+
+func PlayerStats(a address) (lifetime, spendable, streak int64, freezes int) {
+	v := players.Get(a.String())
+	if v == nil {
+		return 0, 0, 0, 0
+	}
+	p := v.(*Player)
+	return p.Lifetime, p.Lifetime - p.Spent, p.Streak, p.Freezes
+}
+
+func Render(path string) string {
+	var sb strings.Builder
+	sb.WriteString("# Taproom\n\n")
+	sb.WriteString("Rounds: " + strconv.Itoa(len(rounds)) + "\n\n")
+	for _, r := range rounds {
+		status := "open"
+		if r.Settled {
+			status = "settled"
+		}
+		sb.WriteString("- round " + strconv.Itoa(r.ID) + ": " + status +
+			", players " + strconv.Itoa(len(r.Players)) +
+			", pot " + strconv.FormatInt(r.Pot, 10) + " ugnot\n")
+	}
+	return sb.String()
+}
