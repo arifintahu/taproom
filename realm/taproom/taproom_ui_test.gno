@@ -36,6 +36,7 @@ func TestNewRoundBoundsCreatorAndOpenCap(cur realm, t *testing.T) {
 func TestJoinPlayerCap(cur realm, t *testing.T) {
 	reset()
 	nowOverride = 10000
+	testing.SetRealm(testing.NewUserRealm(testutils.TestAddress("host")))
 	id := NewRound(cross(cur), 100, 100, 0)
 	for i := 0; i < maxPlayers; i++ {
 		testing.SetRealm(testing.NewUserRealm(testutils.TestAddress("cap" + strconv.Itoa(i))))
@@ -127,7 +128,7 @@ func TestViewsJSON(cur realm, t *testing.T) {
 	testing.SetRealm(testing.NewUserRealm(u))
 	id := NewRound(cross(cur), 100, 100, 0)
 	fund()
-	Join(cross(cur), id, CommitHash(id, u, 22, "salt"))
+	Join(cross(cur), id, CommitHash(id, u, 22, "salt"+pad))
 
 	uassert.Equal(t, 1, RoundCount())
 	js := RoundsJSON(0, 10)
@@ -136,7 +137,7 @@ func TestViewsJSON(cur realm, t *testing.T) {
 	uassert.Equal(t, RoundJSON(id), js[1:len(js)-1])
 
 	nowOverride = 20150
-	Reveal(cross(cur), id, 22, "salt")
+	Reveal(cross(cur), id, 22, "salt"+pad)
 	uassert.True(t, strings.Contains(RoundJSON(id), `"revealed":true,"pick":22,"bonus":4`))
 
 	pj := PlayerJSON(u)

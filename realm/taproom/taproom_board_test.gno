@@ -12,9 +12,10 @@ import (
 // only the players in reveal. Returns the round ID.
 func playRound(cur realm, t *testing.T, start int64, who [3]address, reveal [3]bool) int {
 	nowOverride = start
+	testing.SetRealm(testing.NewUserRealm(testutils.TestAddress("host")))
 	id := NewRound(cross(cur), 100, 100, 0)
 	picks := [3]int64{10, 50, 20}
-	salts := [3]string{"s0", "s1", "s2"}
+	salts := [3]string{"s0" + pad, "s1" + pad, "s2" + pad}
 	for i, a := range who {
 		testing.SetRealm(testing.NewUserRealm(a))
 		fund()

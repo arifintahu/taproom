@@ -67,21 +67,21 @@ func TestTargetFractionIsStoredAndUsed(cur realm, t *testing.T) {
 	getRound(id).Num, getRound(id).Den = 1, 2
 
 	fund()
-	Join(cross(cur), id, CommitHash(id, alice, 10, "sa"))
+	Join(cross(cur), id, CommitHash(id, alice, 10, "sa"+pad))
 	testing.SetRealm(testing.NewUserRealm(bob))
 	fund()
-	Join(cross(cur), id, CommitHash(id, bob, 50, "sb"))
+	Join(cross(cur), id, CommitHash(id, bob, 50, "sb"+pad))
 	testing.SetRealm(testing.NewUserRealm(carol))
 	fund()
-	Join(cross(cur), id, CommitHash(id, carol, 90, "sc"))
+	Join(cross(cur), id, CommitHash(id, carol, 90, "sc"+pad))
 
 	nowOverride = 8150
 	testing.SetRealm(testing.NewUserRealm(alice))
-	Reveal(cross(cur), id, 10, "sa")
+	Reveal(cross(cur), id, 10, "sa"+pad)
 	testing.SetRealm(testing.NewUserRealm(bob))
-	Reveal(cross(cur), id, 50, "sb")
+	Reveal(cross(cur), id, 50, "sb"+pad)
 	testing.SetRealm(testing.NewUserRealm(carol))
-	Reveal(cross(cur), id, 90, "sc")
+	Reveal(cross(cur), id, 90, "sc"+pad)
 
 	nowOverride = 8250
 	Settle(cross(cur), id)

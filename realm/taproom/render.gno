@@ -88,7 +88,8 @@ func renderBoard(name string) string {
 			return sb.String()
 		}
 	}
-	return "# Not found\n\nNo board called " + strconv.Quote(name) + ". [Back to the taproom](" + link("") + ")\n"
+	// the name comes from the URL, so it is not echoed back into the page
+	return "# Not found\n\nNo such board: use points, net, sharp, streak or style. [Back to the taproom](" + link("") + ")\n"
 }
 
 func writeBoardTable(sb *strings.Builder, name string, limit int) {

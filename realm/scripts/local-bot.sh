@@ -5,7 +5,7 @@ SD="$(cd "$(dirname "$0")" && pwd)"
 source "$SD/lib.sh"
 [ "$RPC" = "127.0.0.1:26657" ] || { echo "refusing: local chain only"; exit 1; }
 act=$1 key=$2 round=$3 pick=$4
-salt="bot-$key-$round"
+salt="bot-$key-$round-0123456789abcdef"  # the realm needs 16+ characters
 call() { local fn=$1 send=$2; shift 2; local a=(); for x in "$@"; do a+=(-args "$x"); done; [ -n "$send" ] && a+=(-send "$send")
   echo "" | gnokey maketx call -pkgpath "$PKG" -func "$fn" "${a[@]}" -gas-fee 100000ugnot -gas-wanted 100000000 \
     -chainid "$CHAIN" -remote "$RPC" -broadcast -insecure-password-stdin "$key" 2>&1 | grep -E "OK!|GAS USED|panic|Error" | head -2; }

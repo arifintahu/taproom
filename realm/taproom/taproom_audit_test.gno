@@ -88,3 +88,21 @@ func TestBoardIndexFollowsStats(cur realm, t *testing.T) {
 	uassert.False(t, strings.Contains(LeaderboardJSON("style", 50), s.String()))
 	uassert.Equal(t, 3, boardIdx[4].Size())
 }
+
+// Reveal needs a salt of 16+ characters (a short one lets anyone guess the pick from the hash), and
+// NewRound, like every other write, takes direct wallet calls only.
+func TestShortSaltAndCodeCallsRejected(cur realm, t *testing.T) {
+	reset()
+	nowOverride = 6000
+	testing.SetRealm(testing.NewUserRealm(testutils.TestAddress("host")))
+	id := NewRound(cross(cur), 100, 100, 0)
+	a := testutils.TestAddress("short-salt")
+	testing.SetRealm(testing.NewUserRealm(a))
+	fund()
+	Join(cross(cur), id, CommitHash(id, a, 33, "short"))
+	nowOverride = 6150
+	uassert.AbortsContains(t, cur, "at least 16", func() { Reveal(cross(cur), id, 33, "short") })
+
+	testing.SetRealm(testing.NewCodeRealm("gno.land/r/demo/other"))
+	uassert.AbortsContains(t, cur, "direct user call", func() { NewRound(cross(cur), 100, 100, 0) })
+}

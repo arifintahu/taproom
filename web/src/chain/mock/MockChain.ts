@@ -5,7 +5,7 @@ import {
   ENTRY_FEE, FREEZE_COST, ITEM, MAX_FREEZES, MAX_OPEN_ROUNDS, MAX_PLAYERS, NETWORK, SKINS,
   TARGET_DEN, TARGET_NUM, PRESETS, REALM_PATH, type ItemCode, type PresetId, type Slot,
 } from '../../game/constants'
-import { commitHash, sha256Hex } from '../../game/commit'
+import { commitHash, MIN_SALT_LEN, sha256Hex } from '../../game/commit'
 import { applyMissedWeeks, bonusOf, computeResult, pointsFor, streakOnPlay, targetOf, weekOf } from '../../game/rules'
 import type { HallEntry, Player, Round, Ugnot, WalletInfo } from '../../game/types'
 import type { ChainClient, TxResult } from '../types'
@@ -155,7 +155,7 @@ export class MockChain implements ChainClient {
       }
       const b = BOTS[e.bot]
       const s: Script = {
-        addr: b.addr, name: b.name, pick: e.pick, salt: `bot-${r.id}-${i}`,
+        addr: b.addr, name: b.name, pick: e.pick, salt: `bot-salt-${r.id}-${i}-0123456789`,
         joinAt: e.joinAt ?? 0, revealAt: e.revealAt ?? 20, willReveal: e.willReveal !== false,
       }
       if (e.joined) {
@@ -384,6 +384,7 @@ export class MockChain implements ChainClient {
     if (!e) throw new Error('not a player in this round')
     if (e.revealed) throw new Error('already revealed')
     if (!Number.isInteger(pick) || pick < 0 || pick > 100) throw new Error('pick must be 0..100')
+    if (salt.length < MIN_SALT_LEN) throw new Error('salt must be at least 16 characters')
     if (commitHash(r.id, addr, pick, salt) !== e.commit) throw new Error('reveal does not match commit')
     e.revealed = true
     e.pick = pick

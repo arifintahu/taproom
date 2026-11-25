@@ -41,6 +41,11 @@ const (
 	skinCount = 3
 
 	// Target fraction of the average: fixed at 2/3 in the MVP, stored per round.
+	entryFee = int64(1000000) // 1 GNOT per seat
+
+	// Salts shorter than this let anyone guess a pick from its hash (there are only 101 picks).
+	minSaltLen = 16
+
 	targetNum = int64(2)
 	targetDen = int64(3)
 
@@ -48,8 +53,6 @@ const (
 	feeBps   = int64(50)
 	bpsTotal = int64(10000)
 )
-
-var entryFee int64 = 1000000
 
 // skinPrice is the points price per board skin ID; Oak (0) is free.
 var skinPrice = []int64{0, 150, 400}
@@ -216,13 +219,13 @@ func ownsSkin(a address, skin int) bool {
 // NewRound opens a round. commitSecs and revealSecs are window lengths in seconds.
 // The creator must own boardSkin (Oak table, ID 0, is owned by everyone).
 func NewRound(cur realm, commitSecs, revealSecs int64, boardSkin int) int {
+	creator := mustUser(cur)
 	if commitSecs < minWindow || revealSecs < minWindow || commitSecs > maxWindow || revealSecs > maxWindow {
 		panic("windows must be 1 minute to 24 hours")
 	}
 	if boardSkin < 0 || boardSkin >= skinCount {
 		panic("unknown board skin")
 	}
-	creator := cur.Previous().Address()
 	if !ownsSkin(creator, boardSkin) {
 		panic("creator does not own this board skin")
 	}
@@ -284,6 +287,9 @@ func Reveal(cur realm, roundID int, pick int64, salt string) {
 	t := now()
 	if pick < 0 || pick > 100 {
 		panic("pick must be 0..100")
+	}
+	if len(salt) < minSaltLen {
+		panic("salt must be at least 16 characters")
 	}
 	if err := r.Seal.Reveal(t, caller, sealedValue(roundID, caller, pick), salt); err != nil {
 		panic(err.Error())

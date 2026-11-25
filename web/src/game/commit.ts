@@ -54,6 +54,9 @@ export function sha256Hex(text: string): string {
 export const commitHash = (roundId: number, addr: string, pick: number, salt: string) => sha256Hex(`${roundId}:${addr}:${pick}:${salt}`)
 
 /** 32 random bytes as hex. */
+/** The realm rejects shorter salts at reveal: with only 101 picks, a short salt can be guessed from the hash. */
+export const MIN_SALT_LEN = 16
+
 export function newSalt(): string {
   const b = new Uint8Array(32)
   crypto.getRandomValues(b)

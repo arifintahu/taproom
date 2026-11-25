@@ -111,7 +111,7 @@ late := poll.Unrevealed() // committed but never opened
 
 The API: `New`, `Phase` (commit, reveal, closed), `Commit`, `Reveal`, `Has`, `Count`, `IsRevealed`, `Value`, `Players`, `Revealed`, `Unrevealed`, plus `Hash` and `Verify`. Errors are exported values (`ErrCommitClosed`, `ErrMismatch`, ...). The shortest example is `realm/commitreveal/example_test.gno`.
 
-`realm/sealedpoll` (`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll`) is a second realm built on the package, in about 200 lines. Anyone opens a question with 2 to 8 options (`NewPoll`), voters seal a choice (`Vote` with `commitreveal.Hash(option, salt)`), then open it (`Open`). `Tally` returns the counts as JSON, and `Render` lists every poll with its results and the number of sealed votes never opened. It holds no coins: every window, vote and reveal rule comes from `commitreveal`.
+`realm/sealedpoll` (`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll`) is a second realm built on the package, in about 200 lines. Anyone opens a question with 2 to 8 options (`NewPoll`), voters seal a choice (`Vote` with `commitreveal.Hash(option, salt)`), then open it (`Open`). `Tally` returns the counts as JSON, and `Render` lists polls newest first, 10 per page, with their results and the number of sealed votes never opened. Options cannot contain `:` (so a vote can only open one way), windows run 1 minute to 7 days, salts must be at least 16 characters, and poll text is escaped on the page. It holds no coins: every window, vote and reveal rule comes from `commitreveal`.
 
 ## avatar: the same gnome on chain
 
@@ -165,7 +165,7 @@ bash realm/scripts/local-stop.sh
 ## Tests
 
 ```bash
-bash realm/scripts/test.sh    # Gno tests: commitreveal (7), avatar (6), the realm (27), sealedpoll (2)
+bash realm/scripts/test.sh    # Gno tests: commitreveal (7), avatar (6), the realm (28), sealedpoll (4)
 cd web
 pnpm test                     # Vitest: rules, settle invariants, scenarios S1-S13, chain adapters (89)
 pnpm test:e2e                 # Playwright: room, full round, Confirm sheet paths, shop, practice, dev mode (12)

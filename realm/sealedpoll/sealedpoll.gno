@@ -7,17 +7,24 @@
 package sealedpoll
 
 import (
+	"chain/runtime/unsafe"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal"
+	"gno.land/p/nt/avl/v0"
 )
 
 const (
 	maxOptions     = 8
 	maxQuestionLen = 140
 	maxOptionLen   = 40
+	minWindow      = int64(60)     // 1 minute
+	maxWindow      = int64(604800) // 7 days
+	minSaltLen     = 16            // shorter salts let anyone guess a vote from its hash
+	pageSize       = 10            // polls per Render page
 )
 
 type Poll struct {
@@ -28,7 +35,27 @@ type Poll struct {
 	Seal     *commitreveal.Session
 }
 
-var polls []*Poll
+var (
+	polls     = avl.NewTree() // pollKey(id) -> *Poll
+	pollCount int
+)
+
+// pollKey pads poll IDs so the tree keeps them in numeric order.
+func pollKey(id int) string {
+	s := strconv.Itoa(id)
+	for len(s) < 10 {
+		s = "0" + s
+	}
+	return s
+}
+
+// mustUser returns the caller, who must be a wallet calling directly (not another realm or a script).
+func mustUser(cur realm) address {
+	if !cur.Previous().IsUserCall() {
+		panic("direct user call required")
+	}
+	return cur.Previous().Address()
+}
 
 // nowOverride lets tests control time; zero means use the block time.
 var nowOverride int64
@@ -40,9 +67,14 @@ func now() int64 {
 	return time.Now().Unix()
 }
 
-// NewPoll opens a poll. options is a comma-separated list of 2 to 8 distinct choices;
-// commitSecs and revealSecs are the voting and opening windows in seconds.
+// NewPoll opens a poll. options is a comma-separated list of 2 to 8 distinct choices (no ':', which
+// separates the option from the salt in a vote's hash); commitSecs and revealSecs are the voting and
+// opening windows in seconds, each 1 minute to 7 days.
 func NewPoll(cur realm, question, options string, commitSecs, revealSecs int64) int {
+	creator := mustUser(cur)
+	if commitSecs < minWindow || revealSecs < minWindow || commitSecs > maxWindow || revealSecs > maxWindow {
+		panic("windows must be 1 minute to 7 days")
+	}
 	question = strings.TrimSpace(question)
 	if question == "" || len(question) > maxQuestionLen || !printable(question) {
 		panic("question must be 1 to 140 printable characters")
@@ -50,8 +82,8 @@ func NewPoll(cur realm, question, options string, commitSecs, revealSecs int64) 
 	var opts []string
 	for _, o := range strings.Split(options, ",") {
 		o = strings.TrimSpace(o)
-		if o == "" || len(o) > maxOptionLen || !printable(o) {
-			panic("each option must be 1 to 40 printable characters")
+		if o == "" || len(o) > maxOptionLen || !printable(o) || strings.Contains(o, ":") {
+			panic("each option must be 1 to 40 printable characters, without ':'")
 		}
 		for _, seen := range opts {
 			if seen == o {
@@ -64,37 +96,44 @@ func NewPoll(cur realm, question, options string, commitSecs, revealSecs int64) 
 		panic("a poll needs 2 to 8 options")
 	}
 	p := &Poll{
-		ID:       len(polls),
-		Creator:  cur.Previous().Address(),
+		ID:       pollCount,
+		Creator:  creator,
 		Question: question,
 		Options:  opts,
 		Seal:     commitreveal.New(now(), commitSecs, revealSecs),
 	}
-	polls = append(polls, p)
+	polls.Set(pollKey(p.ID), p)
+	pollCount++
 	return p.ID
 }
 
 // Vote seals a choice: hash is commitreveal.Hash(option, salt), computed by the voter's client.
 func Vote(cur realm, id int, hash string) {
+	voter := mustUser(cur)
 	p := getPoll(id)
-	if err := p.Seal.Commit(now(), cur.Previous().Address(), hash); err != nil {
+	if err := p.Seal.Commit(now(), voter, hash); err != nil {
 		panic(voteError(err))
 	}
 }
 
-// Open reveals a sealed vote with its option and salt during the opening window.
+// Open reveals a sealed vote with its option and salt during the opening window. The salt must be
+// at least 16 characters; voters' clients should use a random one.
 func Open(cur realm, id int, option, salt string) {
+	voter := mustUser(cur)
 	p := getPoll(id)
 	if !p.hasOption(option) {
 		panic("unknown option")
 	}
-	if err := p.Seal.Reveal(now(), cur.Previous().Address(), option, salt); err != nil {
+	if len(salt) < minSaltLen {
+		panic("salt must be at least 16 characters")
+	}
+	if err := p.Seal.Reveal(now(), voter, option, salt); err != nil {
 		panic(voteError(err))
 	}
 }
 
 // PollCount is the number of polls.
-func PollCount() int { return len(polls) }
+func PollCount() int { return pollCount }
 
 // Tally returns a poll's state as JSON: phase (vote, open or closed), sealed votes, opened votes,
 // counts per option in option order, and votes sealed but never opened.
@@ -116,23 +155,33 @@ func Tally(id int) string {
 	return sb.String()
 }
 
-// Render lists every poll with its phase; counts appear once votes start opening.
+// Render lists polls newest first, 10 per page ("" is page 1, "page/2" the next); counts appear
+// once votes start opening. Poll text is escaped, so it cannot add links or headings to the page.
 func Render(path string) string {
+	page := 1
+	if strings.HasPrefix(path, "page/") {
+		n, err := strconv.Atoi(strings.TrimPrefix(path, "page/"))
+		if err != nil || n < 1 {
+			return "# Not found\n"
+		}
+		page = n
+	}
 	var sb strings.Builder
 	sb.WriteString("# Sealed polls\n\nVotes stay sealed until their owners open them. Built on commitreveal.\n\n")
-	if len(polls) == 0 {
+	if pollCount == 0 {
 		sb.WriteString("No polls yet.\n")
 		return sb.String()
 	}
 	t := now()
-	for i := len(polls) - 1; i >= 0; i-- {
-		p := polls[i]
+	first := pollCount - 1 - (page-1)*pageSize
+	for i := first; i >= 0 && i > first-pageSize; i-- {
+		p := getPoll(i)
 		phase := p.Seal.Phase(t)
 		opened := len(p.Seal.Revealed())
-		sb.WriteString("## " + strconv.Itoa(p.ID) + ". " + p.Question + "\n\n")
+		sb.WriteString("## " + strconv.Itoa(p.ID) + ". " + escape(p.Question) + "\n\n")
 		switch phase {
 		case commitreveal.CommitPhase:
-			sb.WriteString("Voting is open: " + strconv.Itoa(p.Seal.Count()) + " sealed votes. Options: " + strings.Join(p.Options, ", ") + ".\n\n")
+			sb.WriteString("Voting is open: " + strconv.Itoa(p.Seal.Count()) + " sealed votes. Options: " + escape(strings.Join(p.Options, ", ")) + ".\n\n")
 			continue
 		case commitreveal.RevealPhase:
 			sb.WriteString("Opening votes: " + strconv.Itoa(opened) + " of " + strconv.Itoa(p.Seal.Count()) + " opened so far.\n\n")
@@ -140,7 +189,7 @@ func Render(path string) string {
 			sb.WriteString("Closed: " + strconv.Itoa(p.Seal.Count()) + " sealed votes, " + strconv.Itoa(opened) + " opened.\n\n")
 		}
 		for j, c := range p.counts() {
-			sb.WriteString("- " + p.Options[j] + ": " + strconv.Itoa(c) + "\n")
+			sb.WriteString("- " + escape(p.Options[j]) + ": " + strconv.Itoa(c) + "\n")
 		}
 		if phase == commitreveal.ClosedPhase {
 			if n := p.Seal.Count() - opened; n > 0 {
@@ -153,14 +202,37 @@ func Render(path string) string {
 		}
 		sb.WriteString("\n")
 	}
+	if first < 0 {
+		sb.WriteString("No polls on this page.\n")
+	}
+	if first-pageSize >= 0 {
+		sb.WriteString("[Older polls](" + link("page/"+strconv.Itoa(page+1)) + ")\n")
+	}
+	return sb.String()
+}
+
+// link points at a page of this realm in gnoweb.
+func link(sub string) string {
+	return "/" + strings.TrimPrefix(unsafe.CurrentRealm().PkgPath(), "gno.land/") + ":" + sub
+}
+
+// escape backslash-escapes markdown punctuation so user text shows as typed.
+func escape(s string) string {
+	var sb strings.Builder
+	for _, r := range s {
+		if strings.ContainsRune("\\`*_{}[]()<>#+-.!|~", r) {
+			sb.WriteByte('\\')
+		}
+		sb.WriteRune(r)
+	}
 	return sb.String()
 }
 
 func getPoll(id int) *Poll {
-	if id < 0 || id >= len(polls) {
+	if id < 0 || id >= pollCount {
 		panic("unknown poll")
 	}
-	return polls[id]
+	return polls.Get(pollKey(id)).(*Poll)
 }
 
 func (p *Poll) hasOption(o string) bool {
@@ -210,7 +282,11 @@ func phaseName(ph commitreveal.Phase) string {
 	return "closed"
 }
 
+// printable rejects invalid UTF-8 and control characters, so Tally's JSON stays valid.
 func printable(s string) bool {
+	if !utf8.ValidString(s) {
+		return false
+	}
 	for _, r := range s {
 		if r < 0x20 || r == 0x7f {
 			return false

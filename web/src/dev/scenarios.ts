@@ -44,7 +44,7 @@ const conn = (x: Ctx, bal: number) => {
 }
 /** Seat "you" in a seeded round with a stored salt, as if you had joined earlier on this device. */
 const meSeat = (x: Ctx, roundId: number, pick: number): SeedEntry => {
-  const salt = `seed-salt-${roundId}`
+  const salt = `seed-salt-${roundId}-0123456789`
   x.session.salts.save({ realm: x.mock.realmPath, roundId, address: x.mock.wallet.address, pick, salt })
   return { me: true, pick, salt }
 }
