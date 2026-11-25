@@ -70,6 +70,7 @@ On narrow screens the room scrolls sideways and the Places row below it reaches 
 ```
 taproom/
   realm/commitreveal/  Gno package: the commit-reveal lifecycle for any sealed choice (importable)
+  realm/avatar/        Gno package: the pixel gnome as SVG, with equipped items (importable)
   realm/taproom/       Gno realm: rounds, stakes, payouts, points, streaks, freezes, cosmetics, JSON views
   realm/sealedpoll/    Gno realm: sealed polls, a second realm built on commitreveal
   realm/scripts/       local gnodev chain: start, deploy, fund test keys, play scripted regulars
@@ -112,6 +113,17 @@ The API: `New`, `Phase` (commit, reveal, closed), `Commit`, `Reveal`, `Has`, `Co
 
 `realm/sealedpoll` (`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll`) is a second realm built on the package, in about 200 lines. Anyone opens a question with 2 to 8 options (`NewPoll`), voters seal a choice (`Vote` with `commitreveal.Hash(option, salt)`), then open it (`Open`). `Tally` returns the counts as JSON, and `Render` lists every poll with its results and the number of sealed votes never opened. It holds no coins: every window, vote and reveal rule comes from `commitreveal`.
 
+## avatar: the same gnome on chain
+
+`gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar` draws a player's gnome as SVG, matching the web app: a base gnome picked from the address (8 combinations of skin, beard and cap colour) with up to four equipped items layered on top.
+
+```go
+svg := avatar.Render(addr, [4]int{107, 201, 0, 403}) // hat, outfit, held item, companion; 0 = none
+uri := avatar.DataURI(addr, equipped)               // data:image/svg+xml;base64,... for an image tag
+```
+
+The Taproom realm exposes it as `AvatarSVG(addr)`, drawn with the items the player has equipped. The art is stored compactly in `realm/avatar/layers.gno` (about 25 KB for 48 items and the base gnomes): each layer is a palette plus colour runs, and bodies, heads and caps share one layout across their colour variants. `tools/pixelart/export_gno.py` generates that file from the same layer art the web app uses and checks that every layer decodes back to its exact pixels.
+
 ## Run it
 
 Requirements: Node (tested with 24) and pnpm 9. Realm work needs the Gno toolchain (v1.8).
@@ -129,7 +141,7 @@ pnpm dev                  # http://localhost:5173, runs on MockChain
 Local chain:
 
 ```bash
-bash realm/scripts/local-start.sh             # starts gnodev, deploys commitreveal, the realm and sealedpoll; keep it running
+bash realm/scripts/local-start.sh             # starts gnodev, deploys the packages and both realms; keep it running
 bash realm/scripts/local-fund.sh <g1address>  # sends 100 test GNOT from a premined test key
 bash realm/scripts/local-bot.sh join p2 0 33  # another regular joins round 0 with pick 33
 bash realm/scripts/local-stop.sh
@@ -138,7 +150,7 @@ bash realm/scripts/local-stop.sh
 ## Tests
 
 ```bash
-bash realm/scripts/test.sh    # Gno tests: commitreveal (7), the realm (19), sealedpoll (2)
+bash realm/scripts/test.sh    # Gno tests: commitreveal (7), avatar (5), the realm (20), sealedpoll (2)
 cd web
 pnpm test                     # Vitest: rules, settle invariants, scenarios S1-S13, chain adapters (81)
 pnpm test:e2e                 # Playwright: room, full round, Confirm sheet paths, shop, practice (8)

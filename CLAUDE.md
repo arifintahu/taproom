@@ -10,6 +10,7 @@ The rules and numbers live in the code: `web/src/game/constants.ts` and `rules.t
 |---|---|
 | `realm/` | A `gnowork.toml` workspace, so packages here import each other in tests |
 | `realm/commitreveal/` | Gno package `gno.land/p/<owner>/commitreveal`: commit-reveal sessions (windows, commits, reveals, who did not reveal). No coins, no global state. `example_test.gno` is the README sample |
+| `realm/avatar/` | Gno package `gno.land/p/<owner>/avatar`: `Render(addr, equipped [4]int)` SVG, `DataURI`, `Combo`, `ValidItem`. `layers.gno` is generated: run `python tools/pixelart/export_gno.py web/public/pixel realm/avatar/layers.gno` after any change to the layer art |
 | `realm/sealedpoll/` | Gno realm `gno.land/r/<owner>/sealedpoll`: sealed polls (`NewPoll`, `Vote`, `Open`, `Tally`, `Render`), a second realm on `commitreveal` showing the package is reusable. No coins |
 | `realm/taproom/` | Gno realm. `taproom.gno` (engine, payouts, points, streak, cosmetics; each round's `Seal` is a `commitreveal.Session`), `views.gno` (JSON views for the UI), `*_test.gno` |
 | `realm/scripts/` | Bash scripts that need the Gno toolchain: `test.sh`, `local-start.sh`, `local-fund.sh`, `local-bot.sh`, `local-probe.sh`, `local-stop.sh` |
@@ -31,7 +32,7 @@ Realm (needs the Gno toolchain v1.8: `gno`, `gnokey`, `gnodev`; the scripts look
 bash realm/scripts/test.sh    # every package in the workspace
 ```
 
-Deploy order matters: `commitreveal` before the realm that imports it (`local-start.sh` deploys `commitreveal`, then `taproom` and `sealedpoll`). A change to `commitreveal` needs a new package path on a public network, and the realm import must follow it.
+Deploy order matters: `commitreveal` before the realm that imports it (`local-start.sh` deploys `commitreveal` and `avatar`, then `taproom` and `sealedpoll`). A change to `commitreveal` needs a new package path on a public network, and the realm import must follow it.
 
 Local chain: run `local-start.sh` in its own terminal or as a background task; it stays attached to `gnodev` until stopped. Then open `http://localhost:5173/?chain=local` (dev key) or `?chain=local&signer=adena`.
 
@@ -42,6 +43,7 @@ Definition of done: Vitest, lint, build and the Playwright tests pass, plus the 
 - **Money and rules:** settle maths lives in one place, `web/src/game/rules.ts` `computeResult`, and must match `Settle` in the realm. `GnoChain` checks each settled round's winners, pot and fee against it and throws on a mismatch. Do not invent or change token or economic rules (fees, prizes, points, prices, caps) without the owner's confirmation.
 - **Realm changes:** write the Gno test first, keep effects before transfers, and keep the invariants (credited + fee == pot, void rounds take no fee, points never decrease Lifetime, freezes stay 0..2).
 - **Every write shows the Confirm sheet** (action, amount, recipient, breakdown) before the wallet. New writes go through `Session.request`.
+- **Avatar hash:** `avatar.Combo` and the web app's `addrHash` (`web/src/game/avatar.ts`) must stay identical, or a gnome looks different on chain and in the app; `avatar_test.gno` pins three addresses.
 - **Guided targets:** a scenario step's `target` key must match a `data-tg` attribute on the control it points at; `e2e/dev.spec.ts` plays every scenario through the toolbar.
 - **Accessibility bar:** every clickable is a real button, 44 px targets, visible focus ring, Escape closes the top window only, and reduced motion is honoured.
 - **Chain safety:** do not send testnet or mainnet transactions, or post anywhere, unless the user asks. The dev-key signer must refuse any non-local RPC.

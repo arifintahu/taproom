@@ -6,9 +6,20 @@ package taproom
 import (
 	"strconv"
 	"strings"
+
+	"gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar"
 )
 
 func RoundCount() int { return len(rounds) }
+
+// AvatarSVG draws a player's gnome wearing their equipped items (see the avatar package).
+func AvatarSVG(a address) string {
+	var equipped [4]int
+	if v := players.Get(a.String()); v != nil {
+		equipped = v.(*Player).Equipped
+	}
+	return avatar.Render(a, equipped)
+}
 
 func FeeRecipient() address { return feeRecipient }
 

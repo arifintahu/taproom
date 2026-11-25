@@ -147,3 +147,21 @@ func TestViewsJSON(cur realm, t *testing.T) {
 	// an unknown player reads as empty
 	uassert.True(t, strings.Contains(PlayerJSON(testutils.TestAddress("nobody")), `"lastWeek":null`))
 }
+
+// AvatarSVG draws the player's gnome with the items they have equipped.
+func TestAvatarSVG(cur realm, t *testing.T) {
+	reset()
+	u := testutils.TestAddress("avatar-wearer")
+	base := AvatarSVG(u)
+	uassert.True(t, strings.HasPrefix(base, "<svg"))
+	uassert.Equal(t, 3, strings.Count(base, "<g>")) // body, head, cap
+
+	testing.SetRealm(testing.NewUserRealm(u))
+	getPlayer(u).Lifetime = 200
+	BuyItem(cross(cur), 107)
+	Equip(cross(cur), 0, 107)
+	worn := AvatarSVG(u)
+	uassert.Equal(t, 3, strings.Count(worn, "<g>")) // the hat replaces the cap
+	uassert.NotEqual(t, base, worn)
+	uassert.True(t, strings.Contains(worn, `fill="#2a2420"`)) // tricorn colour
+}
