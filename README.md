@@ -212,7 +212,6 @@ These follow from the rules and are not bugs:
 - **Several wallets.** One person with several wallets can skew the average; each wallet pays its own 1 GNOT and its own fees. Points can also be farmed this way; they only buy cosmetics and never affect payouts.
 - **Network costs.** Joining, revealing and settling pay gas and a storage deposit for the data they write. Settling a full table of 10 costs the settler about 52M gas and a storage deposit, because it writes every player's payout and leaderboard position. These amounts are measured on a local chain; public testnet prices may differ.
 - **Fee recipient.** Fees go to the address that deployed the realm, set once and never changed. Only `WithdrawFees` moves them.
-- **Gambling rules.** Games with a pot can fall under gambling rules in some countries. Taproom runs on testnet, where coins have no value.
 
 ## License
 
