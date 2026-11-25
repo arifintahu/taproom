@@ -14,8 +14,8 @@ The rules and numbers live in the code: `web/src/game/constants.ts` and `rules.t
 | `realm/sealedpoll/` | Gno realm `gno.land/r/<owner>/sealedpoll`: sealed polls (`NewPoll`, `Vote`, `Open`, `Tally`, `Render`), a second realm on `commitreveal` showing the package is reusable. No coins |
 | `realm/taproom/` | Gno realm. `taproom.gno` (engine, payouts, points, streak, cosmetics, leaderboard stats; each round's `Seal` is a `commitreveal.Session`), `views.gno` (JSON views for the UI), `board.gno` (leaderboards, `LeaderboardJSON`), `render.gno` (gnoweb pages with avatars), `*_test.gno` |
 | `realm/scripts/` | Bash scripts that need the Gno toolchain: `test.sh`, `local-start.sh`, `local-fund.sh`, `local-bot.sh`, `local-probe.sh`, `local-stop.sh` |
-| `web/src/game/` | Pure logic: `rules.ts` (settle maths, streak), `constants.ts`, `selectors.ts` (blockers, Confirm rows), `room.ts`, `closeup.ts`, `panels.ts`, `hall.ts`, `avatar.ts`, `commit.ts` |
-| `web/src/chain/` | `ChainClient` (`types.ts`); `mock/MockChain.ts`; `gno/` (`GnoChain`, `signers` for the dev key and Adena, `qeval` parsers, `mapping`); `config.ts` picks one from the URL |
+| `web/src/game/` | Pure logic: `rules.ts` (settle maths, streak), `constants.ts`, `selectors.ts` (blockers, Confirm rows), `room.ts`, `closeup.ts`, `panels.ts`, `avatar.ts`, `commit.ts` |
+| `web/src/chain/` | `ChainClient` (`types.ts`); `mock/MockChain.ts`; `gno/` (`GnoChain`, `signers` for the dev key and Adena, `qeval` parsers, `mapping`; the Hall reads the realm's `LeaderboardJSON`); `config.ts` picks one from the URL |
 | `web/src/state/` | `Session` store (snapshot, UI state, actions, Confirm-sheet tx flow), salt storage |
 | `web/src/scene/`, `web/src/ui/` | Room and close-up scenes; HUD, windows, Confirm sheet, slate |
 | `web/src/dev/` | Dev mode (`?dev`): `scenarios.ts` (S1-S13 with seeds, steps, `done` checks and `act`s), `guide.ts` (guided-step controller), `DevHost.tsx` and `DevBar.tsx` (toolbar). Lazy-loaded; players never download it |

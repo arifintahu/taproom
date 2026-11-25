@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ITEMS } from '../../game/constants'
-import { itemCode, itemId, toLook, toPlayer, toRound, type PlayerJSON, type RoundJSON } from './mapping'
+import { hallFromBoards, itemCode, itemId, toLook, toPlayer, toRound, type LeaderRowJSON, type PlayerJSON, type RoundJSON } from './mapping'
 import { gnoStr, qAddress, qInt, qJSON, qString } from './qeval'
 import { reason } from './signers'
 
@@ -66,6 +66,23 @@ describe('mapping', () => {
     const r = toRound(j, new Map())
     expect(r.result?.credited).toEqual({ me: 2_985_000 })
     expect(() => toRound({ ...j, winners: ['a'] }, new Map())).toThrow(/disagrees/)
+  })
+})
+
+describe('hall from LeaderboardJSON', () => {
+  const row = (addr: string, o: Partial<LeaderRowJSON> = {}): LeaderRowJSON => ({
+    rank: 1, addr, points: 0, net: 0, wins: 0, sharp100: null, bestStreak: 0, style: 0, equipped: [0, 0, 0, 0], ...o,
+  })
+
+  it('maps a row: sharp in hundredths, best streak, look from item IDs', () => {
+    const [e] = hallFromBoards([[row('a', { points: 34, net: 2_980_000, sharp100: 222, bestStreak: 3, equipped: [107, 0, 0, 401] })]])
+    expect(e).toEqual({ addr: 'a', look: { hat: 'h7', companion: 'c1' }, net: 2_980_000, sharp: 2.22, streak: 3, points: 34 })
+    expect(hallFromBoards([[row('b')]])[0].sharp).toBeNull()
+  })
+
+  it('merges the boards by address, so a regular on several boards appears once', () => {
+    const hall = hallFromBoards([[row('a'), row('b')], [row('b'), row('c')], []])
+    expect(hall.map((e) => e.addr)).toEqual(['a', 'b', 'c'])
   })
 })
 

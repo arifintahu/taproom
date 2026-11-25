@@ -2,7 +2,7 @@
 
 import { ITEM, SLOTS, type ItemCode, type Look, type Slot } from '../../game/constants'
 import { computeResult } from '../../game/rules'
-import type { Player, Round } from '../../game/types'
+import type { HallEntry, Player, Round } from '../../game/types'
 
 /** Realm item IDs: slotBase + n, hat 100, outfit 200, held 300, companion 400; n = 1..12. */
 const PREFIX: Record<Slot, string> = { hat: 'h', outfit: 'o', held: 'i', companion: 'c' }
@@ -66,6 +66,33 @@ export function toPlayer(j: PlayerJSON): Player {
     addr: j.addr, lifetime: j.lifetime, spent: j.spent, streak: j.streak, lastWeek: j.lastWeek, freezes: j.freezes,
     owned: j.owned.map(itemCode).filter((c): c is ItemCode => !!c), equipped: toLook(j.equipped), skins: j.skins,
   }
+}
+
+/** One row of LeaderboardJSON(board, limit); every row carries every stat. */
+export interface LeaderRowJSON {
+  rank: number
+  addr: string
+  points: number
+  /** ugnot credited minus entry fees paid (a fee counts from Join). */
+  net: number
+  wins: number
+  /** Average distance to the target in hundredths; null before the first completed round. */
+  sharp100: number | null
+  bestStreak: number
+  style: number
+  equipped: number[]
+}
+
+/** Hall entries from several boards' rows, one per address (first seen wins; the rows are identical). */
+export function hallFromBoards(boards: LeaderRowJSON[][]): HallEntry[] {
+  const out = new Map<string, HallEntry>()
+  for (const r of boards.flat()) {
+    if (out.has(r.addr)) continue
+    out.set(r.addr, {
+      addr: r.addr, look: toLook(r.equipped), net: r.net, sharp: r.sharp100 === null ? null : r.sharp100 / 100, streak: r.bestStreak, points: r.points,
+    })
+  }
+  return [...out.values()]
 }
 
 /**

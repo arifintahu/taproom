@@ -2,10 +2,9 @@
 
 import { GnoJSONRPCProvider } from '@gnolang/gno-js-client'
 import { ENTRY_FEE, type ItemCode, type Look, type Slot } from '../../game/constants'
-import { hallFromRounds } from '../../game/hall'
 import type { Player, Round, WalletInfo } from '../../game/types'
 import type { ChainClient, TxResult } from '../types'
-import { itemId, slotIndex, toPlayer, toRound, type PlayerJSON, type RoundJSON } from './mapping'
+import { hallFromBoards, itemId, slotIndex, toPlayer, toRound, type LeaderRowJSON, type PlayerJSON, type RoundJSON } from './mapping'
 import { gnoStr, qAddress, qInt, qJSON } from './qeval'
 import type { Signer } from './signers'
 
@@ -22,6 +21,9 @@ const GAS: Record<string, number> = {
   NewRound: 20_000_000, Join: 20_000_000, Reveal: 20_000_000, Settle: 50_000_000, Claim: 20_000_000,
   BuyItem: 20_000_000, Equip: 20_000_000, BuyFreeze: 20_000_000, BuySkin: 20_000_000, WithdrawFees: 20_000_000,
 }
+
+/** Realm boards behind the Hall's tabs and its style gallery. */
+const HALL_BOARDS = ['net', 'sharp', 'streak', 'points', 'style']
 
 export class GnoChain implements ChainClient {
   readonly realmPath: string
@@ -86,11 +88,10 @@ export class GnoChain implements ChainClient {
   async getFeesAccrued() { return qInt(await this.q('FeesAccrued()')) }
   async feeRecipient() { return qAddress(await this.q('FeeRecipient()')) }
 
+  /** The realm ranks each board (top 50); merging them gives every regular a tab or the gallery can show. */
   async getHall() {
-    const rounds = await this.getRounds()
-    const addrs = [...new Set(rounds.filter((r) => r.settled).flatMap((r) => r.entries.map((e) => e.addr)))]
-    const players = new Map(await Promise.all(addrs.map(async (a) => [a, (await this.lookOf(a)).player] as const)))
-    return hallFromRounds(rounds, players)
+    const boards = await Promise.all(HALL_BOARDS.map(async (b) => qJSON<LeaderRowJSON[]>(await this.q(`LeaderboardJSON(${gnoStr(b)}, 50)`))))
+    return hallFromBoards(boards)
   }
 
   /** Latest block time in seconds. */
