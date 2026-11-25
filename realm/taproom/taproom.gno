@@ -1,18 +1,18 @@
 package taproom
 
-// Taproom realm: 2/3 Game round engine with stakes, commit-reveal,
-// permissionless settlement, pull payouts, and a time-window weekly streak.
+// Taproom realm: 2/3 Game round engine with stakes, permissionless settlement, pull payouts,
+// and a time-window weekly streak. The commit-reveal lifecycle of each round (windows, sealed
+// picks, reveals, who did not reveal) runs on the commitreveal package.
 
 import (
 	"chain"
 	"chain/banker"
 	"chain/runtime/unsafe"
-	"crypto/sha256"
-	"encoding/hex"
 	"strconv"
 	"strings"
 	"time"
 
+	"gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal"
 	"gno.land/p/nt/avl/v0"
 )
 
@@ -67,21 +67,18 @@ func init() {
 // nowOverride lets tests control time; zero means use the block time.
 var nowOverride int64
 
+// Entry is what the realm keeps for a revealed pick; the commit itself lives in the round's Seal.
 type Entry struct {
-	Commit   string
-	Revealed bool
-	Pick     int64
-	Bonus    int64 // streak bonus earned at reveal; paid only if the round completes
+	Pick  int64
+	Bonus int64 // streak bonus earned at reveal; paid only if the round completes
 }
 
 type Round struct {
 	ID        int
 	Creator   address
 	Start     int64
-	CommitEnd int64
-	RevealEnd int64
-	Players   []address
-	Entries   *avl.Tree // address -> *Entry
+	Seal      *commitreveal.Session // windows, commits, reveals and join order
+	Entries   *avl.Tree             // address -> *Entry, for revealed players
 	Settled   bool
 	Pot       int64
 	Fee       int64
@@ -127,8 +124,7 @@ func weekIndex(ts int64) int64 {
 
 // CommitHash is the value a player submits when joining: sha256("<pick>:<salt>") as hex.
 func CommitHash(pick int64, salt string) string {
-	sum := sha256.Sum256([]byte(strconv.FormatInt(pick, 10) + ":" + salt))
-	return hex.EncodeToString(sum[:])
+	return commitreveal.Hash(strconv.FormatInt(pick, 10), salt)
 }
 
 func mustUser(cur realm) address {
@@ -207,8 +203,7 @@ func NewRound(cur realm, commitSecs, revealSecs int64, boardSkin int) int {
 		ID:        len(rounds),
 		Creator:   creator,
 		Start:     t,
-		CommitEnd: t + commitSecs,
-		RevealEnd: t + commitSecs + revealSecs,
+		Seal:      commitreveal.New(t, commitSecs, revealSecs),
 		Entries:   avl.NewTree(),
 		BoardSkin: boardSkin,
 		Num:       targetNum,
@@ -222,24 +217,23 @@ func NewRound(cur realm, commitSecs, revealSecs int64, boardSkin int) int {
 func Join(cur realm, roundID int, commit string) {
 	caller := mustUser(cur)
 	r := getRound(roundID)
-	if now() >= r.CommitEnd {
+	t := now()
+	if r.Seal.Phase(t) != commitreveal.CommitPhase {
 		panic("commit window closed")
 	}
-	if len(commit) != 64 {
-		panic("commit must be 64 hex chars")
-	}
-	if r.Entries.Has(caller.String()) {
+	if r.Seal.Has(caller) {
 		panic("already joined")
 	}
-	if len(r.Players) >= maxPlayers {
+	if r.Seal.Count() >= maxPlayers {
 		panic("round is full")
 	}
 	sent := unsafe.OriginSend()
 	if len(sent) != 1 || sent[0].Denom != denom || sent[0].Amount != entryFee {
 		panic("must send exactly the entry fee in ugnot")
 	}
-	r.Entries.Set(caller.String(), &Entry{Commit: commit})
-	r.Players = append(r.Players, caller)
+	if err := r.Seal.Commit(t, caller, commit); err != nil {
+		panic(err.Error())
+	}
 	r.Pot += entryFee
 }
 
@@ -249,32 +243,19 @@ func Reveal(cur realm, roundID int, pick int64, salt string) {
 	caller := mustUser(cur)
 	r := getRound(roundID)
 	t := now()
-	if t < r.CommitEnd || t >= r.RevealEnd {
-		panic("not in reveal window")
-	}
-	v := r.Entries.Get(caller.String())
-	if v == nil {
-		panic("not a player in this round")
-	}
-	e := v.(*Entry)
-	if e.Revealed {
-		panic("already revealed")
-	}
 	if pick < 0 || pick > 100 {
 		panic("pick must be 0..100")
 	}
-	if CommitHash(pick, salt) != e.Commit {
-		panic("reveal does not match commit")
+	if err := r.Seal.Reveal(t, caller, strconv.FormatInt(pick, 10), salt); err != nil {
+		panic(err.Error())
 	}
-	e.Revealed = true
-	e.Pick = pick
-	e.Bonus = updateStreak(caller, t)
+	r.Entries.Set(caller.String(), &Entry{Pick: pick, Bonus: updateStreak(caller, t)})
 }
 
 // Settle can be called by anyone once the reveal window has closed.
 func Settle(cur realm, roundID int) {
 	r := getRound(roundID)
-	if now() < r.RevealEnd {
+	if now() < r.Seal.RevealEnd {
 		panic("reveal window still open")
 	}
 	if r.Settled {
@@ -284,18 +265,15 @@ func Settle(cur realm, roundID int) {
 
 	var revealers []address
 	var sum int64
-	for _, p := range r.Players {
-		e := r.Entries.Get(p.String()).(*Entry)
-		if e.Revealed {
-			revealers = append(revealers, p)
-			sum += e.Pick
-		}
+	for _, o := range r.Seal.Revealed() { // join order
+		revealers = append(revealers, o.Who)
+		sum += r.Entries.Get(o.Who.String()).(*Entry).Pick
 	}
 	n := int64(len(revealers))
 
 	// Fewer than two reveals: void round, everyone is refunded. No points.
 	if n < 2 {
-		for _, p := range r.Players {
+		for _, p := range r.Seal.Players() {
 			credit(p, entryFee)
 		}
 		return
@@ -553,7 +531,7 @@ func Render(path string) string {
 			status = "settled"
 		}
 		sb.WriteString("- round " + strconv.Itoa(r.ID) + ": " + status +
-			", players " + strconv.Itoa(len(r.Players)) +
+			", players " + strconv.Itoa(r.Seal.Count()) +
 			", pot " + strconv.FormatInt(r.Pot, 10) + " ugnot\n")
 	}
 	return sb.String()

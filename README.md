@@ -69,8 +69,9 @@ On narrow screens the room scrolls sideways and the Places row below it reaches 
 
 ```
 taproom/
-  realm/taproom/   Gno realm: rounds, stakes, payouts, points, streaks, freezes, cosmetics, JSON views
-  realm/scripts/   local gnodev chain: start, deploy, fund test keys, play scripted regulars
+  realm/commitreveal/  Gno package: the commit-reveal lifecycle for any sealed choice (importable)
+  realm/taproom/       Gno realm: rounds, stakes, payouts, points, streaks, freezes, cosmetics, JSON views
+  realm/scripts/       local gnodev chain: start, deploy, fund test keys, play scripted regulars
   web/             Vite + React + TypeScript app
     src/game/      rules and settle maths, streak, catalogue, avatars, selectors, scene layout
     src/chain/     ChainClient interface: MockChain (scenarios) and GnoChain (qeval reads, wallet signers)
@@ -81,9 +82,32 @@ taproom/
   media/           README screenshots (regenerate with pnpm screenshots)
 ```
 
-- **Realm:** `gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom`. Commit-reveal with a sha256 hash, integer settle maths (`|3 * n * pick - 2 * sum|`), pull payments with effects before transfers, and a fee recipient that can only withdraw accrued fees. Read views return JSON for the web app.
+- **Realm:** `gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom`. Each round runs its sealed picks on `commitreveal`; the realm adds integer settle maths (`|3 * n * pick - 2 * sum|`), pull payments with effects before transfers, and a fee recipient that can only withdraw accrued fees. Read views return JSON for the web app.
 - **Web app:** one `ChainClient` interface with two implementations. `MockChain` mirrors the realm in memory for the demo and the tests. `GnoChain` reads with `vm/qeval` and signs through Adena, or through a throwaway key on a local chain.
 - **Time:** the realm uses block time. Gno has no scheduled execution, so streaks are evaluated lazily and anyone can settle.
+
+## commitreveal: sealed choices for any realm
+
+`gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal` runs the whole commit-reveal lifecycle so a realm only writes its own rules: games with secret picks, sealed-bid auctions, private votes. A session holds the commit and reveal windows, accepts one hash per address, checks each reveal against its hash, and reports who opened what and who never revealed. It holds no coins and no global state; the importing realm stores the session and passes the block time.
+
+```go
+import "gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal"
+
+poll := commitreveal.New(now, 3600, 3600) // one hour to vote, one hour to open
+
+// voting: only a hash goes on chain; the client keeps value and salt
+err := poll.Commit(now, voter, hash)      // hash = commitreveal.Hash("yes", salt), computed off-chain
+
+// opening, in the reveal window
+err = poll.Reveal(now, voter, "yes", salt)
+
+for _, o := range poll.Revealed() { // opened values, in commit order
+	count(o.Who, o.Value)
+}
+late := poll.Unrevealed() // committed but never opened
+```
+
+The API: `New`, `Phase` (commit, reveal, closed), `Commit`, `Reveal`, `Has`, `Count`, `IsRevealed`, `Value`, `Players`, `Revealed`, `Unrevealed`, plus `Hash` and `Verify`. Errors are exported values (`ErrCommitClosed`, `ErrMismatch`, ...). The full sealed-poll example is `realm/commitreveal/example_test.gno`.
 
 ## Run it
 
@@ -102,7 +126,7 @@ pnpm dev                  # http://localhost:5173, runs on MockChain
 Local chain:
 
 ```bash
-bash realm/scripts/local-start.sh             # starts gnodev and deploys the realm; keep it running
+bash realm/scripts/local-start.sh             # starts gnodev, deploys commitreveal then the realm; keep it running
 bash realm/scripts/local-fund.sh <g1address>  # sends 100 test GNOT from a premined test key
 bash realm/scripts/local-bot.sh join p2 0 33  # another regular joins round 0 with pick 33
 bash realm/scripts/local-stop.sh
@@ -111,7 +135,7 @@ bash realm/scripts/local-stop.sh
 ## Tests
 
 ```bash
-bash realm/scripts/test.sh    # Gno realm tests (19)
+bash realm/scripts/test.sh    # Gno tests: commitreveal (7) and the realm (19)
 cd web
 pnpm test                     # Vitest: rules, settle invariants, scenarios S1-S13, chain adapters (81)
 pnpm test:e2e                 # Playwright: room, full round, Confirm sheet paths, shop, practice (8)

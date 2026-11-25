@@ -66,7 +66,7 @@ func PlayerJSON(a address) string {
 
 func writeRound(sb *strings.Builder, r *Round) {
 	sb.WriteString(`{"id":` + strconv.Itoa(r.ID) + `,"creator":"` + r.Creator.String() + `","skin":` + strconv.Itoa(r.BoardSkin))
-	sb.WriteString(`,"start":` + i64(r.Start) + `,"commitEnd":` + i64(r.CommitEnd) + `,"revealEnd":` + i64(r.RevealEnd))
+	sb.WriteString(`,"start":` + i64(r.Start) + `,"commitEnd":` + i64(r.Seal.CommitEnd) + `,"revealEnd":` + i64(r.Seal.RevealEnd))
 	sb.WriteString(`,"num":` + i64(r.Num) + `,"den":` + i64(r.Den) + `,"settled":` + strconv.FormatBool(r.Settled))
 	sb.WriteString(`,"pot":` + i64(r.Pot) + `,"fee":` + i64(r.Fee) + `,"winners":[`)
 	for i, w := range r.Winners {
@@ -76,19 +76,18 @@ func writeRound(sb *strings.Builder, r *Round) {
 		sb.WriteString(`"` + w.String() + `"`)
 	}
 	sb.WriteString(`],"entries":[`)
-	for i, p := range r.Players {
-		e := r.Entries.Get(p.String()).(*Entry)
+	for i, p := range r.Seal.Players() {
 		if i > 0 {
 			sb.WriteString(",")
 		}
-		sb.WriteString(`{"addr":"` + p.String() + `","revealed":` + strconv.FormatBool(e.Revealed) + `,"pick":`)
 		// a pick stays hidden until its owner reveals it
-		if e.Revealed {
-			sb.WriteString(i64(e.Pick))
-		} else {
-			sb.WriteString("null")
+		pick, bonus := "null", int64(0)
+		if v := r.Entries.Get(p.String()); v != nil {
+			e := v.(*Entry)
+			pick, bonus = i64(e.Pick), e.Bonus
 		}
-		sb.WriteString(`,"bonus":` + i64(e.Bonus) + "}")
+		sb.WriteString(`{"addr":"` + p.String() + `","revealed":` + strconv.FormatBool(r.Seal.IsRevealed(p)) + `,"pick":` + pick)
+		sb.WriteString(`,"bonus":` + i64(bonus) + "}")
 	}
 	sb.WriteString("]}")
 }
