@@ -9,7 +9,7 @@ import { px, recent, useScale } from './useScale'
 
 const PX = '/pixel'
 
-/** The long table, handover 6.3: wall slate, seated gnomes, slips, names, pot. */
+/** The long table: wall slate, seated gnomes, slips, names, pot. */
 export function TableCloseup({ round: r }: { round: Round }) {
   const [{ snap, ui }] = useSession()
   const [ref, k] = useScale(closeupScale)

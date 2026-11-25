@@ -192,7 +192,7 @@ func TestVoidRoundRefundsEveryone(cur realm, t *testing.T) {
 }
 
 // A lone player who joins, reveals, and lets the round void gets a refund and no points.
-// The reveal still counts for the streak (accepted trade-off, spec section 8).
+// The reveal still counts for the streak (an accepted trade-off).
 func TestVoidRoundGivesNoPoints(cur realm, t *testing.T) {
 	reset()
 	nowOverride = 7000

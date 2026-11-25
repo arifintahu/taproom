@@ -50,7 +50,7 @@ interface Revealable {
 }
 
 /**
- * Settle maths (spec section 5): winners minimise |den*n*pick - num*sum|; ties split the prize,
+ * Settle maths: winners minimise |den*n*pick - num*sum|; ties split the prize,
  * the remainder goes to the first winner in join order; fewer than 2 reveals voids the round.
  */
 export function computeResult(entries: Revealable[], num: number, den: number): RoundResult {
@@ -84,7 +84,7 @@ export function pointsFor(res: RoundResult, addr: string, revealed: boolean, bon
   return POINTS_PLAY + bonus + (res.winners.includes(addr) ? POINTS_WIN - POINTS_PLAY : 0)
 }
 
-/** Streak update on a qualifying play (spec section 8; realm updateStreak). Mutates p. */
+/** Streak update on a qualifying play (same as the realm's updateStreak). Mutates p. */
 export function streakOnPlay(p: Player, week: number): void {
   if (p.lastWeek === null || p.streak === 0) {
     p.streak = 1

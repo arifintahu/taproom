@@ -54,7 +54,7 @@
   .app { padding: 0; }
 }
 
-/* ---------- table screen (handover 6.3) ---------- */
+/* ---------- table screen ---------- */
 .round-head {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px;
   background: #241710; border-bottom: 3px solid var(--dark);
@@ -140,7 +140,7 @@
 .tx-bar { align-self: stretch; height: 8px; background: var(--dark); overflow: hidden; }
 .tx-bar > div { height: 100%; background: var(--amber); animation-duration: 1.2s; }
 
-/* ---------- windows (handover section 8) ---------- */
+/* ---------- windows ---------- */
 .wide-stack { align-items: stretch; }
 .grow { flex: 1 1 240px; min-width: 0; }
 .left { text-align: left; }

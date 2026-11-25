@@ -1,5 +1,5 @@
 // Pure derived values for the UI: blockers (with the reason shown next to a disabled button),
-// confirm-sheet rows and the room layout. Ported from the prototype's renderVals()/scene().
+// confirm-sheet rows and the room layout.
 
 import {
   ENTRY_FEE, FREEZE_COST, ITEM, MAX_FREEZES, MAX_OPEN_ROUNDS, MAX_PLAYERS, PRESETS, RARITY,

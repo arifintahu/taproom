@@ -7,7 +7,7 @@ import (
 	"gno.land/p/nt/uassert/v0"
 )
 
-// D15: the round creator must own the board skin; Oak (0) is free for everyone.
+// The round creator must own the board skin; Oak (0) is free for everyone.
 func TestBoardSkinOwnership(cur realm, t *testing.T) {
 	reset()
 	nowOverride = 7000
@@ -49,7 +49,7 @@ func TestBoardSkinOwnership(cur realm, t *testing.T) {
 	uassert.Equal(t, 0, rounds[other].BoardSkin)
 }
 
-// D14: the round stores the target fraction (2/3 in the MVP) and Settle uses the stored values.
+// The round stores the target fraction (2/3 in the MVP) and Settle uses the stored values.
 func TestTargetFractionIsStoredAndUsed(cur realm, t *testing.T) {
 	reset()
 	nowOverride = 8000

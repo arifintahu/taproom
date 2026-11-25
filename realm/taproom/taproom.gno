@@ -29,7 +29,7 @@ const (
 	freezeCost = int64(40)
 	maxFreezes = 2
 
-	// Caps (spec 6.2 and 15): players per round, open rounds per creator, window bounds.
+	// Caps: players per round, open rounds per creator, window bounds.
 	maxPlayers    = 10
 	maxOpenRounds = 3
 	minWindow     = int64(60)
@@ -38,10 +38,10 @@ const (
 	// Cosmetic slots: hat, outfit, held item, companion (Player.Equipped order).
 	slotCount = 4
 
-	// Board skins (D15): 0 = Oak table (free, owned by everyone), 1 = Moonlit, 2 = Gold-trim.
+	// Board skins: 0 = Oak table (free, owned by everyone), 1 = Moonlit, 2 = Gold-trim.
 	skinCount = 3
 
-	// Target fraction of the average (D14): fixed at 2/3 in the MVP, stored per round.
+	// Target fraction of the average: fixed at 2/3 in the MVP, stored per round.
 	targetNum = int64(2)
 	targetDen = int64(3)
 
@@ -461,7 +461,7 @@ func BuySkin(cur realm, skin int) {
 
 // itemPrice returns the points price of a cosmetic item, or -1 for an unknown ID.
 // itemID = slotBase + n with slotBase 100 hat, 200 outfit, 300 held, 400 companion and n = 1..12.
-// Rarity by n (handover 7.2): 1, 5, 6 common 40; 2, 7, 8 rare 150; 3, 9, 10 epic 400; 4, 11, 12 legendary 1000.
+// Rarity by n: 1, 5, 6 common 40; 2, 7, 8 rare 150; 3, 9, 10 epic 400; 4, 11, 12 legendary 1000.
 func itemPrice(id int) int64 {
 	slot, n := id/100, id%100
 	if slot < 1 || slot > slotCount || n < 1 || n > 12 {

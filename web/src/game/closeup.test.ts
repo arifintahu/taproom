@@ -9,7 +9,7 @@ const played = async (id: string) => {
 }
 
 describe('close-up', () => {
-  it('scale follows handover 5.1', () => {
+  it('scale: 1.6 minimum on narrow screens, 3.4 maximum on wide ones', () => {
     expect(closeupScale(375, 375)).toBe(1.6)
     expect(closeupScale(800, 800)).toBeCloseTo(780 / 320)
     expect(closeupScale(1600, 1600)).toBe(3.4)

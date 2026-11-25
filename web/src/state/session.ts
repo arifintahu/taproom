@@ -95,7 +95,7 @@ export class Session {
   private refreshing: Promise<void> | null = null
   private lastWall = 0
   private lastPoll = 0
-  /** Real chains: read every 3 s while the page is open (handover 4.2), and on window focus. */
+  /** Real chains: read every 3 s while the page is open, and on window focus. */
   private readonly pollMs: number
   private timer: ReturnType<typeof setInterval> | null = null
 

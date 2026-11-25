@@ -1,4 +1,4 @@
-// Commit format from the realm spike: CommitHash(pick, salt) = hex(sha256("<pick>:<salt>")).
+// Commit format used by the realm: CommitHash(pick, salt) = hex(sha256("<pick>:<salt>")).
 // A small synchronous SHA-256 so the mock chain and the UI share one code path.
 
 const K = new Uint32Array([

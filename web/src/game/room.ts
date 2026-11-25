@@ -1,4 +1,4 @@
-// Room scene layout in logical pixels (560 x 200), handover 6.1-6.2. The view multiplies by k.
+// Room scene layout in logical pixels (560 x 200). The view multiplies by k.
 
 import { MAX_PLAYERS, PRESETS, SKINS, type Look } from './constants'
 import { dur } from './format'

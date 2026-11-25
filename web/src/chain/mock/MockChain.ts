@@ -1,4 +1,4 @@
-// In-memory chain that mirrors the realm spike (spike/taproom/taproom.gno) plus scripted regulars.
+// In-memory chain that mirrors the realm (realm/taproom) plus scripted regulars.
 // Drives the dev scenarios, the demo and the unit tests. Times are seconds of simulated block time.
 
 import {
@@ -84,7 +84,7 @@ export class MockChain implements ChainClient {
   rpcUp = true
   /** Next write fails on chain with this reason (S10e). */
   failNext: string | null = null
-  /** New tables fill with three scripted regulars, as in the prototype. */
+  /** New tables fill with three scripted regulars. */
   fillNewRounds = true
   private txSeq = 0
 
@@ -205,7 +205,7 @@ export class MockChain implements ChainClient {
   async feeRecipient() { this.up(); return this.owner }
   async now() { this.up(); return this.clock }
 
-  /** Prototype standings for the regulars, [bot, net GNOT, avg distance, streak, points], plus every settled mock round. */
+  /** Seeded standings for the regulars, [bot, net GNOT, avg distance, streak, points], plus every settled mock round. */
   async getHall(): Promise<HallEntry[]> {
     this.up()
     const base = new Map<string, { net: number; dist: number; n: number }>()
@@ -343,7 +343,7 @@ export class MockChain implements ChainClient {
     return this.tx((caller) => {
       const p = this.player(caller)
       // Apply weeks already missed first, so a freeze bought now cannot cover a past week
-      // and a stale freeze count cannot block the purchase. The spike does not do this yet.
+      // and a stale freeze count cannot block the purchase (the realm does the same).
       applyMissedWeeks(p, weekOf(this.clock))
       if (p.freezes >= MAX_FREEZES) throw new Error('freeze limit reached')
       this.spend(p, FREEZE_COST)

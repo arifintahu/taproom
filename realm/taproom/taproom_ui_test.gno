@@ -9,7 +9,7 @@ import (
 	"gno.land/p/nt/uassert/v0"
 )
 
-// Spec section 5: windows of 1 minute to 24 hours; section 15: 3 open rounds per address.
+// Windows of 1 minute to 24 hours; at most 3 open rounds per address.
 func TestNewRoundBoundsCreatorAndOpenCap(cur realm, t *testing.T) {
 	reset()
 	nowOverride = 9000
@@ -32,7 +32,7 @@ func TestNewRoundBoundsCreatorAndOpenCap(cur realm, t *testing.T) {
 	NewRound(cross(cur), 120, 120, 0)
 }
 
-// Spec section 6.2: at most 10 players per round.
+// At most 10 players per round.
 func TestJoinPlayerCap(cur realm, t *testing.T) {
 	reset()
 	nowOverride = 10000
@@ -48,7 +48,7 @@ func TestJoinPlayerCap(cur realm, t *testing.T) {
 	uassert.Equal(t, int64(maxPlayers)*entryFee, rounds[id].Pot)
 }
 
-// Handover 7.2: itemID = slotBase + n (hat 100, outfit 200, held 300, companion 400), n = 1..12,
+// Item IDs: itemID = slotBase + n (hat 100, outfit 200, held 300, companion 400), n = 1..12,
 // prices by rarity 40 / 150 / 400 / 1000; Equip(slot, 0) unequips.
 func TestBuyItemAndEquip(cur realm, t *testing.T) {
 	reset()

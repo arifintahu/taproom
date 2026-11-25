@@ -18,7 +18,7 @@ const BODY: Record<PanelId, () => React.JSX.Element> = {
   regular: RegularPanel, hearth: HearthPanel, fees: FeesPanel, shop: ShopPanel, hall: HallPanel, howto: HowToPanel, settings: SettingsPanel,
 }
 
-/** The open place window (handover section 8). */
+/** The open place window. */
 export function Panel({ panel }: { panel: PanelId }) {
   const [, session] = useSession()
   const Body = BODY[panel]

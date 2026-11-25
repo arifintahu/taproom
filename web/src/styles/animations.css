@@ -1,4 +1,4 @@
-/* Ambient motion moves in whole pixels (steps timing). Handover 6.4.
+/* Ambient motion moves in whole pixels (steps timing).
    .rm (in-game Reduce motion) and prefers-reduced-motion stop every loop and turn
    signature moments into fades. */
 .bob { animation: bob 1.7s steps(1, end) infinite; }

@@ -2,7 +2,7 @@
 
 Taproom is a Gno.land hackathon entry (Gnome Tavern Hackathon): a pixel-art tavern where players play the 2/3 Game for a pot. This file covers the code in this repo. Gameplay and setup are in [README.md](README.md).
 
-The design docs, spec and handover live outside this repo, in the workspace folder `../docs` (`taproom-spec.md`, `taproom-pixel-ui-handover.md`, `design/`), with project decisions in `../CLAUDE.md`. Read them when they exist; never copy them into this repo.
+The rules and numbers live in the code: `web/src/game/constants.ts` and `rules.ts` for the client, `realm/taproom/taproom.gno` for the chain. Keep design notes, specs and plans out of this repo.
 
 ## Layout
 
@@ -34,8 +34,8 @@ Definition of done: Vitest, lint, build and the Playwright tests pass, plus the 
 
 ## Rules for this code
 
-- **Money and rules:** settle maths lives in one place, `web/src/game/rules.ts` `computeResult`, and must match `Settle` in the realm. `GnoChain` checks each settled round's winners, pot and fee against it and throws on a mismatch. Do not invent economics; the decided rules are in the spec and `../CLAUDE.md`.
-- **Realm changes:** write the Gno test first, keep effects before transfers, and keep the invariants from spec section 10 (credited + fee == pot, void rounds take no fee, points never decrease Lifetime, freezes stay 0..2).
+- **Money and rules:** settle maths lives in one place, `web/src/game/rules.ts` `computeResult`, and must match `Settle` in the realm. `GnoChain` checks each settled round's winners, pot and fee against it and throws on a mismatch. Do not invent or change token or economic rules (fees, prizes, points, prices, caps) without the owner's confirmation.
+- **Realm changes:** write the Gno test first, keep effects before transfers, and keep the invariants (credited + fee == pot, void rounds take no fee, points never decrease Lifetime, freezes stay 0..2).
 - **Every write shows the Confirm sheet** (action, amount, recipient, breakdown) before the wallet. New writes go through `Session.request`.
 - **Accessibility bar:** every clickable is a real button, 44 px targets, visible focus ring, Escape closes the top window only, and reduced motion is honoured.
 - **Chain safety:** do not send testnet or mainnet transactions, or post anywhere, unless the user asks. The dev-key signer must refuse any non-local RPC.

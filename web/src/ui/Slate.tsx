@@ -3,7 +3,7 @@ import { fmtN } from '../game/format'
 
 /** Chalkboard result: number line with average and target, chalk pick circles, picks table. */
 export function Slate({ title, chalk: c }: { title: string; chalk: Chalk }) {
-  // 74 px per row: a mark with its WINNER tag is about 70 px tall (the prototype's 62 overlapped)
+  // 74 px per row: a mark with its WINNER tag is about 70 px tall, so rows never overlap
   const h = 150 + c.maxRow * 74
   const close = Math.abs(c.avg - c.target) < 14
   return (

@@ -1,4 +1,4 @@
-/* Pixel kit, ported from the prototype CSS (handover 5.3). */
+/* Pixel kit: windows, buttons, chips, rows, scene layers. */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; }
 body {

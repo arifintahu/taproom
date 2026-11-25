@@ -87,7 +87,7 @@ describe('streak', () => {
     expect([1, 2, 3, 4, 5, 6].map(bonusOf)).toEqual([4, 8, 12, 16, 20, 20])
   })
 
-  it('update rule per spec section 8', () => {
+  it('update rule: same week, next week, missed weeks with and without freezes', () => {
     const p = player()
     streakOnPlay(p, 10)
     expect(p.streak).toBe(1)

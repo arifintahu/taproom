@@ -4,7 +4,7 @@ import { ITEM, SLOTS, type ItemCode, type Look, type Slot } from '../../game/con
 import { computeResult } from '../../game/rules'
 import type { Player, Round } from '../../game/types'
 
-/** Handover 7.2 item IDs: slotBase + n, hat 100, outfit 200, held 300, companion 400; n = 1..12. */
+/** Realm item IDs: slotBase + n, hat 100, outfit 200, held 300, companion 400; n = 1..12. */
 const PREFIX: Record<Slot, string> = { hat: 'h', outfit: 'o', held: 'i', companion: 'c' }
 const BASE: Record<string, number> = { h: 100, o: 200, i: 300, c: 400 }
 
@@ -70,7 +70,7 @@ export function toPlayer(j: PlayerJSON): Player {
 
 /**
  * The realm stores pot, fee and winners; the payout split is derived with the same rules as Settle
- * (spec section 5), so credited amounts never need their own storage. A mismatch means the client and
+ * (see computeResult), so credited amounts never need their own storage. A mismatch means the client and
  * realm disagree, which is worth failing loudly on.
  */
 export function toRound(j: RoundJSON, looks: Map<string, Look>): Round {

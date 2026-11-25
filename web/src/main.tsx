@@ -30,7 +30,7 @@ const boot = q.get('chain')
 
 boot.then((x) => {
   const { session } = x
-  // Dev only: lets e2e tests and the console drive the mock clock until the dev bar lands (milestone 8).
+  // Dev only: lets e2e tests, the screenshot script and the console drive the mock clock.
   if (q.has('dev')) window.__taproom = x
   session.start()
   createRoot(document.getElementById('root')!).render(

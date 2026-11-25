@@ -1,5 +1,4 @@
-// Derived values for the windows (handover section 8): My Regular, Hearth, Shop, Hall, New table.
-// Ported from the prototype's reg/shop/hall/cr values in renderVals().
+// Derived values for the windows: My Regular, Hearth, Shop, Hall, New table.
 
 import {
   ENTRY_FEE, ITEM, ITEMS, LINES, PRESETS, RANKS, RARITY, SKINS, SLOTS, type ItemCode, type Look, type Rarity, type Slot,

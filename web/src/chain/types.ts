@@ -6,9 +6,8 @@ export type TxResult =
   | { ok: false; reason: string; rejected?: boolean }
 
 /**
- * One interface for the UI. MockChain implements it now; GnoChain (Adena + RPC) comes in milestone 7.
- * Additions to handover 4.1: getWallet/connect (Adena connection), reconnect (RPC retry), getHall,
- * and item IDs as prototype codes until the on-chain ID scheme is confirmed.
+ * One interface for the UI, implemented by MockChain (in memory) and GnoChain (RPC reads, wallet signing).
+ * Item IDs are the UI's codes ('h7'); GnoChain maps them to the realm's numeric IDs.
  */
 export interface ChainClient {
   /** Realm package path, e.g. gno.land/r/<owner>/taproom. */
@@ -26,7 +25,7 @@ export interface ChainClient {
   getClaimable(addr: string): Promise<Ugnot>
   getFeesAccrued(): Promise<Ugnot>
   feeRecipient(): Promise<string>
-  /** Leaderboard rows (not in the spike yet: the realm needs a view or Render() parsing). */
+  /** Leaderboard rows (the realm has no board view yet; GnoChain computes them from rounds). */
   getHall(): Promise<HallEntry[]>
   now(): Promise<number>
   // wallet

@@ -1,5 +1,4 @@
-// Game constants, ported from the prototype (docs/design/prototype/tavern-engine.js)
-// and the realm spike (spike/taproom/taproom.gno). Amounts are in ugnot, times in seconds.
+// Game constants, matching the realm (realm/taproom/taproom.gno). Amounts are in ugnot, times in seconds.
 
 export const UGNOT_PER_GNOT = 1_000_000
 export const ENTRY_FEE = 1_000_000
@@ -79,7 +78,7 @@ export const RARITY: Record<Rarity, { word: string; style: number; price: number
 export type Slot = 'hat' | 'outfit' | 'held' | 'companion'
 export const SLOTS: Slot[] = ['hat', 'outfit', 'held', 'companion']
 
-/** Prototype item code, e.g. 'h7'. The on-chain ID scheme (slotBase + n) is still open (handover 7.2). */
+/** UI item code, e.g. 'h7'. The realm stores slotBase + n (hat 100, outfit 200, held 300, companion 400). */
 export type ItemCode = string
 export interface Item {
   id: ItemCode

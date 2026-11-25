@@ -3,7 +3,7 @@ import { CopyHash } from './CopyHash'
 import { Window } from './Window'
 
 /**
- * The in-game Confirm sheet, shown before every signature (handover 4.3): action, amount,
+ * The in-game Confirm sheet, shown before every signature: action, amount,
  * recipient and breakdown. Only Approve reaches the wallet; then broadcasting, confirmed or failed.
  */
 export function ConfirmSheet() {

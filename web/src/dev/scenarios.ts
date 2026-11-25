@@ -1,4 +1,4 @@
-// Scenarios S1-S13 (with S10a-f), ported from the prototype. Each seeds a fresh MockChain and
+// Scenarios S1-S13 (with S10a-f). Each seeds a fresh MockChain and
 // lists guided steps: `done` says when a step is complete, `act` performs it (the guided Next button).
 
 import { ENTRY_FEE, LINES, NETWORK } from '../game/constants'

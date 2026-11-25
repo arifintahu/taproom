@@ -1,5 +1,4 @@
-// Table close-up (logical 320 x 150) and the round panels beside it, handover 6.3.
-// Ported from the prototype's `rd` and `cu` values in renderVals().
+// Table close-up (logical 320 x 150) and the round panels beside it.
 
 import { ENTRY_FEE, MAX_PLAYERS, PRESETS, SKINS } from './constants'
 import { dur, fmtG, fmtN, shortAddr } from './format'

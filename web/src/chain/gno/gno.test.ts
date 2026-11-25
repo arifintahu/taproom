@@ -41,7 +41,7 @@ describe('qeval parsing', () => {
 })
 
 describe('mapping', () => {
-  it('item codes round-trip to handover 7.2 IDs for all 48 items', () => {
+  it('item codes round-trip to realm item IDs for all 48 items', () => {
     expect(itemId('h7')).toBe(107)
     expect(itemId('c12')).toBe(412)
     for (const it of ITEMS) expect(itemCode(itemId(it.id))).toBe(it.id)
