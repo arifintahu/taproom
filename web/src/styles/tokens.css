@@ -1,0 +1,22 @@
+/* Design tokens, handover section 5.2. */
+:root {
+  --ink: #f6ebd9;
+  --mu: #d6c3a2;
+  --dark: #1b0f0a;
+  --wood: #6b4024;
+  --wood-hi: #9a6236;
+  --wood-lo: #3b2415;
+  --panel: #2a1a12;
+  --panel-in: #1f130c;
+  --amber: #f2a93b;
+  --amber-hi: #ffd27a;
+  --amber-lo: #b8742a;
+  --teal: #4fd1b5;
+  --chalk: #7ad8c2;
+  --violet: #c4a5ff;
+  --red: #ff8a80;
+  --ok: #8ee07a;
+  --night: #120a06;
+  --focus: #ffd27a;
+  --font: 'Pixelify Sans', ui-monospace, 'Courier New', monospace;
+}

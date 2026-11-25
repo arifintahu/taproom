@@ -1,0 +1,256 @@
+{
+ "grid": [
+  48,
+  48
+ ],
+ "anchor_feet": [
+  24,
+  47
+ ],
+ "draw_order": [
+  "companion",
+  "body",
+  "outfit",
+  "head",
+  "hat",
+  "held"
+ ],
+ "skins": [
+  "#f6d3b8",
+  "#eebd96",
+  "#e0a77d",
+  "#c98d63",
+  "#ad7350",
+  "#8e5a3c",
+  "#6f4530",
+  "#553424"
+ ],
+ "beards": {
+  "white": "#f2ede3",
+  "grey": "#b9b4ab",
+  "ginger": "#d9773a",
+  "brown": "#7a4a2a",
+  "black": "#3a2a22",
+  "blond": "#e8c86a"
+ },
+ "caps": [
+  "#c8423b",
+  "#2f7d6d",
+  "#3d5a98",
+  "#8a4fa8",
+  "#d8892b",
+  "#5c8a3a",
+  "#b5446e",
+  "#2b6f8f"
+ ],
+ "items": {
+  "h1": {
+   "slot": "hat",
+   "file": "layers/hat/h1.svg"
+  },
+  "h2": {
+   "slot": "hat",
+   "file": "layers/hat/h2.svg"
+  },
+  "h3": {
+   "slot": "hat",
+   "file": "layers/hat/h3.svg"
+  },
+  "h4": {
+   "slot": "hat",
+   "file": "layers/hat/h4.svg"
+  },
+  "o1": {
+   "slot": "outfit",
+   "file": "layers/outfit/o1.svg"
+  },
+  "o2": {
+   "slot": "outfit",
+   "file": "layers/outfit/o2.svg"
+  },
+  "o3": {
+   "slot": "outfit",
+   "file": "layers/outfit/o3.svg"
+  },
+  "o4": {
+   "slot": "outfit",
+   "file": "layers/outfit/o4.svg"
+  },
+  "i1": {
+   "slot": "held",
+   "file": "layers/held/i1.svg"
+  },
+  "i2": {
+   "slot": "held",
+   "file": "layers/held/i2.svg"
+  },
+  "i3": {
+   "slot": "held",
+   "file": "layers/held/i3.svg"
+  },
+  "i4": {
+   "slot": "held",
+   "file": "layers/held/i4.svg"
+  },
+  "c1": {
+   "slot": "companion",
+   "file": "layers/companion/c1.svg"
+  },
+  "c2": {
+   "slot": "companion",
+   "file": "layers/companion/c2.svg"
+  },
+  "c3": {
+   "slot": "companion",
+   "file": "layers/companion/c3.svg"
+  },
+  "c4": {
+   "slot": "companion",
+   "file": "layers/companion/c4.svg"
+  },
+  "h5": {
+   "slot": "hat",
+   "file": "layers/hat/h5.svg"
+  },
+  "h6": {
+   "slot": "hat",
+   "file": "layers/hat/h6.svg"
+  },
+  "h7": {
+   "slot": "hat",
+   "file": "layers/hat/h7.svg"
+  },
+  "h8": {
+   "slot": "hat",
+   "file": "layers/hat/h8.svg"
+  },
+  "h9": {
+   "slot": "hat",
+   "file": "layers/hat/h9.svg"
+  },
+  "h10": {
+   "slot": "hat",
+   "file": "layers/hat/h10.svg"
+  },
+  "h11": {
+   "slot": "hat",
+   "file": "layers/hat/h11.svg"
+  },
+  "h12": {
+   "slot": "hat",
+   "file": "layers/hat/h12.svg"
+  },
+  "o5": {
+   "slot": "outfit",
+   "file": "layers/outfit/o5.svg"
+  },
+  "o6": {
+   "slot": "outfit",
+   "file": "layers/outfit/o6.svg"
+  },
+  "o7": {
+   "slot": "outfit",
+   "file": "layers/outfit/o7.svg"
+  },
+  "o8": {
+   "slot": "outfit",
+   "file": "layers/outfit/o8.svg"
+  },
+  "o9": {
+   "slot": "outfit",
+   "file": "layers/outfit/o9.svg"
+  },
+  "o10": {
+   "slot": "outfit",
+   "file": "layers/outfit/o10.svg"
+  },
+  "o11": {
+   "slot": "outfit",
+   "file": "layers/outfit/o11.svg"
+  },
+  "o12": {
+   "slot": "outfit",
+   "file": "layers/outfit/o12.svg"
+  },
+  "i5": {
+   "slot": "held",
+   "file": "layers/held/i5.svg"
+  },
+  "i6": {
+   "slot": "held",
+   "file": "layers/held/i6.svg"
+  },
+  "i7": {
+   "slot": "held",
+   "file": "layers/held/i7.svg"
+  },
+  "i8": {
+   "slot": "held",
+   "file": "layers/held/i8.svg"
+  },
+  "i9": {
+   "slot": "held",
+   "file": "layers/held/i9.svg"
+  },
+  "i10": {
+   "slot": "held",
+   "file": "layers/held/i10.svg"
+  },
+  "i11": {
+   "slot": "held",
+   "file": "layers/held/i11.svg"
+  },
+  "i12": {
+   "slot": "held",
+   "file": "layers/held/i12.svg"
+  },
+  "c5": {
+   "slot": "companion",
+   "file": "layers/companion/c5.svg"
+  },
+  "c6": {
+   "slot": "companion",
+   "file": "layers/companion/c6.svg"
+  },
+  "c7": {
+   "slot": "companion",
+   "file": "layers/companion/c7.svg"
+  },
+  "c8": {
+   "slot": "companion",
+   "file": "layers/companion/c8.svg"
+  },
+  "c9": {
+   "slot": "companion",
+   "file": "layers/companion/c9.svg"
+  },
+  "c10": {
+   "slot": "companion",
+   "file": "layers/companion/c10.svg"
+  },
+  "c11": {
+   "slot": "companion",
+   "file": "layers/companion/c11.svg"
+  },
+  "c12": {
+   "slot": "companion",
+   "file": "layers/companion/c12.svg"
+  }
+ },
+ "props": {
+  "table_oak": "props/table_oak.svg",
+  "table_moon": "props/table_moon.svg",
+  "table_gold": "props/table_gold.svg",
+  "stool": "props/stool.svg",
+  "slip_sealed": "props/slip_sealed.svg",
+  "slip_open": "props/slip_open.svg",
+  "coins_s": "props/coins_s.svg",
+  "coins_m": "props/coins_m.svg",
+  "coins_l": "props/coins_l.svg",
+  "slate": "props/slate.svg",
+  "hourglass_full": "props/hourglass_full.svg",
+  "hourglass_half": "props/hourglass_half.svg",
+  "jar_ember": "props/jar_ember.svg",
+  "jar_lampoil": "props/jar_lampoil.svg"
+ }
+}

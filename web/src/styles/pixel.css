@@ -1,0 +1,95 @@
+/* Pixel kit, ported from the prototype CSS (handover 5.3). */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  min-height: 100vh;
+  background: var(--night);
+  color: var(--ink);
+  font: 400 1rem/1.45 var(--font);
+  font-variant-numeric: tabular-nums;
+}
+p { margin: 0; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+a { color: var(--chalk); }
+a:hover { color: var(--ink); }
+.h { font-weight: 700; margin: 0; line-height: 1.15; }
+.mu { color: var(--mu); }
+.sr {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+.win {
+  background: var(--panel);
+  border: 4px solid var(--dark);
+  box-shadow: inset 0 0 0 3px #8a5a32, inset 0 0 0 6px var(--wood-lo), 0 6px 0 rgba(0, 0, 0, 0.5);
+  padding: 20px;
+}
+.card { background: var(--panel-in); border: 3px solid var(--wood); padding: 14px; }
+
+.pb {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; min-width: 44px; padding: 0 16px;
+  border: 3px solid var(--dark); background: var(--wood); color: var(--ink);
+  font: 700 1rem/1.1 var(--font); cursor: pointer; text-decoration: none;
+  box-shadow: inset -3px -3px 0 var(--wood-lo), inset 3px 3px 0 var(--wood-hi);
+}
+.pb:active { box-shadow: inset 3px 3px 0 var(--wood-lo); }
+.pb:disabled { opacity: 0.45; cursor: not-allowed; }
+.pb.pp { background: var(--amber); color: var(--dark); box-shadow: inset -3px -3px 0 var(--amber-lo), inset 3px 3px 0 var(--amber-hi); }
+.pb.pp:active { box-shadow: inset 3px 3px 0 var(--amber-lo); }
+.pb.sm { padding: 0 10px; font-size: 1rem; }
+.pb[aria-pressed='true'] { background: var(--ink); color: var(--dark); box-shadow: none; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px;
+  border: 2px solid currentColor; font-size: 0.875rem; font-weight: 700; background: var(--dark);
+}
+.row { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 2px dotted var(--wood); }
+
+/* scene primitives */
+.px { image-rendering: pixelated; display: block; position: absolute; }
+.ab { position: absolute; }
+.pg { position: relative; display: inline-block; flex: none; }
+.pgl { position: absolute; inset: 0; background-repeat: no-repeat; image-rendering: pixelated; }
+.pg-body { background-image: url(/pixel/scene/g_body.svg); }
+.pg-head { background-image: url(/pixel/scene/g_head.svg); }
+.pg-cap { background-image: url(/pixel/scene/g_cap.svg); }
+.pg-blink { background-image: url(/pixel/scene/g_blink.svg); }
+.pg-hat { background-image: url(/pixel/scene/g_hat.svg); }
+.pg-outfit { background-image: url(/pixel/scene/g_outfit.svg); }
+.pg-held { background-image: url(/pixel/scene/g_held.svg); }
+.pg-comp { background-image: url(/pixel/scene/g_comp.svg); }
+
+.ic {
+  display: inline-block; width: 24px; height: 24px; flex: none;
+  background-image: url(/pixel/scene/icons.svg); background-size: 144px 24px; image-rendering: pixelated;
+}
+.ic-pouch { background-position: 0 0; }
+.ic-points { background-position: -24px 0; }
+.ic-flame { background-position: -48px 0; }
+.ic-gear { background-position: -72px 0; }
+.ic-book { background-position: -96px 0; }
+
+.fire {
+  background-image: url(/pixel/scene/fire.svg); background-size: 400% 100%;
+  image-rendering: pixelated; transform-origin: 50% 100%;
+}
+.fire-low { transform: scale(0.62); }
+.fire-cold { background-position: 100% 0; }
+
+/* hotspots: transparent buttons over the art */
+.hs {
+  position: absolute; background: transparent; border: 3px dashed transparent;
+  cursor: pointer; padding: 0; margin: 0; color: inherit;
+}
+.hs:hover, .hs:focus-visible { border-color: var(--focus); outline: none; }
+.tag {
+  position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%);
+  white-space: nowrap; background: var(--dark); color: var(--ink); border: 2px solid var(--focus);
+  padding: 1px 6px; font: 700 0.8125rem/1.3 var(--font); display: none; pointer-events: none; z-index: 3;
+}
+/* Tags near the room edges anchor to that edge so they never widen the scroll strip. */
+.tag-l { left: 0; transform: none; }
+.tag-r { left: auto; right: 0; transform: none; }
+.hs:hover .tag, .hs:focus-visible .tag, .hs.pulse .tag { display: block; }
