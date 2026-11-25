@@ -128,17 +128,19 @@ func TestViewsJSON(cur realm, t *testing.T) {
 	testing.SetRealm(testing.NewUserRealm(u))
 	id := NewRound(cross(cur), 100, 100, 0)
 	fund()
-	Join(cross(cur), id, CommitHash(id, u, 22, "salt"+pad))
+	h := CommitHash(id, u, 22, "salt"+pad)
+	Join(cross(cur), id, h)
 
 	uassert.Equal(t, 1, RoundCount())
 	js := RoundsJSON(0, 10)
-	uassert.True(t, strings.HasPrefix(js, `[{"id":0,"creator":"`+u.String()+`","skin":0,"start":20000,"commitEnd":20100,"revealEnd":20200,"num":2,"den":3,"settled":false,"pot":1000000,"fee":0,"winners":[],"entries":[{"addr":"`+u.String()+`","revealed":false,"pick":null,"bonus":0}]}]`))
+	uassert.True(t, strings.HasPrefix(js, `[{"id":0,"creator":"`+u.String()+`","skin":0,"start":20000,"commitEnd":20100,"revealEnd":20200,"num":2,"den":3,"settled":false,"pot":1000000,"fee":0,"winners":[],"entries":[{"addr":"`+u.String()+`","commit":"`+h+`","revealed":false,"pick":null,"salt":null,"bonus":0}]}]`))
 	uassert.Equal(t, "[]", RoundsJSON(5, 10))
 	uassert.Equal(t, RoundJSON(id), js[1:len(js)-1])
 
 	nowOverride = 20150
 	Reveal(cross(cur), id, 22, "salt"+pad)
-	uassert.True(t, strings.Contains(RoundJSON(id), `"revealed":true,"pick":22,"bonus":4`))
+	// after a reveal the salt is public, so anyone can check sha256("<round>:<address>:<pick>:<salt>") == commit
+	uassert.True(t, strings.Contains(RoundJSON(id), `"commit":"`+h+`","revealed":true,"pick":22,"salt":"salt`+pad+`","bonus":4`))
 
 	pj := PlayerJSON(u)
 	uassert.True(t, strings.HasPrefix(pj, `{"addr":"`+u.String()+`","lifetime":0,"spent":0,"streak":1,"lastWeek":`))

@@ -2,6 +2,7 @@
 
 import { GnoJSONRPCProvider } from '@gnolang/gno-js-client'
 import { ENTRY_FEE, type ItemCode, type Look, type Slot } from '../../game/constants'
+import { fmtG } from '../../game/format'
 import type { Player, Round, WalletInfo } from '../../game/types'
 import type { ChainClient, TxResult } from '../types'
 import { hallFromBoards, itemId, slotIndex, toPlayer, toRound, type LeaderRowJSON, type PlayerJSON, type RoundJSON } from './mapping'
@@ -26,6 +27,27 @@ const GAS: Record<string, number> = {
   BuyItem: 20_000_000, Equip: 30_000_000, BuyFreeze: 20_000_000, BuySkin: 20_000_000, WithdrawFees: 20_000_000,
 }
 
+/** The realm function each Confirm-sheet action calls. */
+const FUNC_OF: Record<string, string> = {
+  join: 'Join', reveal: 'Reveal', settle: 'Settle', claim: 'Claim', create: 'NewRound',
+  buy: 'BuyItem', skin: 'BuySkin', freeze: 'BuyFreeze', equip: 'Equip', withdraw: 'WithdrawFees',
+}
+
+/**
+ * Network rows for the Confirm sheet. The dev key offers gas wanted / 1000 ugnot as the fee (the
+ * chain's gas price); Adena sets its own fee when it signs. Every write may also pay a storage
+ * deposit for the bytes it adds to the chain, which the chain computes at execution time.
+ */
+export function networkRows(kind: string, signer: 'dev-key' | 'adena'): [string, string][] {
+  const gas = GAS[FUNC_OF[kind]]
+  if (!gas) return []
+  const fee = signer === 'adena' ? 'Set by Adena when you sign' : `${fmtG(Math.ceil(gas / 1000))} GNOT (gas)`
+  return [
+    ['Network fee', fee],
+    ['Storage deposit', 'Set by the chain for the data this writes'],
+  ]
+}
+
 /** Realm boards behind the Hall's tabs and its style gallery. */
 const HALL_BOARDS = ['net', 'sharp', 'streak', 'points', 'style']
 
@@ -47,6 +69,8 @@ export class GnoChain implements ChainClient {
     this.signer = c.signer
     this.walletName = c.signer.kind === 'adena' ? 'Adena' : 'the dev key'
   }
+
+  networkRows(kind: string) { return networkRows(kind, this.signer.kind) }
 
   private async q(expr: string) {
     return (await this.provider).evaluateExpression(this.realmPath, expr)

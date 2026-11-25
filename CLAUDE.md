@@ -21,10 +21,13 @@ The rules and numbers live in the code: `web/src/game/constants.ts` and `rules.t
 | `web/src/dev/` | Dev mode (`?dev`): `scenarios.ts` (S1-S13 with seeds, steps, `done` checks and `act`s), `guide.ts` (guided-step controller), `DevHost.tsx` and `DevBar.tsx` (toolbar). Lazy-loaded; players never download it |
 | `web/screens/` | Playwright script that regenerates `media/*.png` |
 | `tools/pixelart/` | Python generator for `web/public/pixel` (the project's own art) |
+| `tools/verify/` | `verify-round.mjs`: standalone settle checker (plain Node, no dependencies, no code shared with the realm or web app); `verify-round.test.mjs` |
 
 ## Commands
 
 Web (from `web/`): `pnpm test`, `pnpm lint`, `pnpm build`, `PW_CHANNEL=chrome pnpm test:e2e`, `PW_CHANNEL=chrome pnpm screenshots`.
+
+Settle checker (from the repo root): `node --test tools/verify/verify-round.test.mjs`; against a chain: `node tools/verify/verify-round.mjs --all [--rpc URL] [--realm PATH]`.
 
 Realm (needs the Gno toolchain v1.8: `gno`, `gnokey`, `gnodev`; the scripts look in `$GNO_HOME/bin`, default `~/.gno/bin`, then `PATH`):
 
@@ -42,11 +45,11 @@ Definition of done: Vitest, lint, build and the Playwright tests pass, plus the 
 
 - **Money and rules:** settle maths lives in one place, `web/src/game/rules.ts` `computeResult`, and must match `Settle` in the realm. `GnoChain` checks each settled round's winners, pot and fee against it and throws on a mismatch. Do not invent or change token or economic rules (fees, prizes, points, prices, caps) without the owner's confirmation.
 - **Realm changes:** write the Gno test first, keep effects before transfers, and keep the invariants (credited + fee == pot, void rounds take no fee, points never decrease Lifetime, freezes stay 0..2).
-- **Commit format:** `CommitHash(round, player, pick, salt)` = `sha256("<round>:<address>:<pick>:<salt>")`. Binding the round and player stops a copied hash from being opened by someone else (a copier could otherwise tie the winner and split the prize). `web/src/game/commit.ts` and `local-bot.sh` must use the same format. Reveal (and sealedpoll `Open`) needs a salt of at least 16 characters (`MIN_SALT_LEN` in `commit.ts`); with 101 picks a short salt can be guessed from the hash.
+- **Commit format:** `CommitHash(round, player, pick, salt)` = `sha256("<round>:<address>:<pick>:<salt>")`. Binding the round and player stops a copied hash from being opened by someone else (a copier could otherwise tie the winner and split the prize). `web/src/game/commit.ts` and `local-bot.sh` must use the same format. Reveal needs a salt of 16 to 128 visible ASCII characters (sealedpoll `Open`: at least 16); with 101 picks a short salt can be guessed from the hash. `RoundJSON` publishes each commit, and each salt once revealed, so `tools/verify` can re-check every reveal; if the settle rules or the JSON change, update the checker too.
 - **Every write takes a direct wallet call** (`mustUser`: `IsUserCall()`, which is false for other realms and for `maketx run` scripts). Tests must call `testing.SetRealm(testing.NewUserRealm(...))` in the same function before a write; it has no effect when set in a helper such as `reset()`.
 - **User text on Render pages is escaped** (sealedpoll `escape`) or not echoed (taproom not-found pages), so it cannot add links or headings.
 - **No unbounded loops in calls or views.** Rounds live in an `avl.Tree`; the open-round cap uses a per-creator counter; Render uses an open-round index and the last 5 settled IDs; each board is a sorted `avl.Tree` (`boardIdx`) kept current by `reindex(addr)`. Any new code path that changes a board stat (points, net, distance, best streak, equipped items) must call `reindex`.
-- **Every write shows the Confirm sheet** (action, amount, recipient, breakdown) before the wallet. New writes go through `Session.request`.
+- **Every write shows the Confirm sheet** (action, amount, recipient, breakdown) before the wallet. New writes go through `Session.request`, which appends `ChainClient.networkRows` (gas fee and storage deposit; none on MockChain). A new write needs an entry in `FUNC_OF` and `GAS` in `GnoChain.ts`.
 - **Avatar hash:** `avatar.Combo` and the web app's `addrHash` (`web/src/game/avatar.ts`) must stay identical, or a gnome looks different on chain and in the app; `avatar_test.gno` pins three addresses.
 - **Guided targets:** a scenario step's `target` key must match a `data-tg` attribute on the control it points at; `e2e/dev.spec.ts` plays every scenario through the toolbar.
 - **Accessibility bar:** every clickable is a real button, 44 px targets, visible focus ring, Escape closes the top window only, and reduced motion is honoured.

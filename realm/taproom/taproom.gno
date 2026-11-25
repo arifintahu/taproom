@@ -45,6 +45,7 @@ const (
 
 	// Salts shorter than this let anyone guess a pick from its hash (there are only 101 picks).
 	minSaltLen = 16
+	maxSaltLen = 128 // salts are kept and shown in RoundJSON, so they stay short and printable
 
 	targetNum = int64(2)
 	targetDen = int64(3)
@@ -72,7 +73,8 @@ var nowOverride int64
 // Entry is what the realm keeps for a revealed pick; the commit itself lives in the round's Seal.
 type Entry struct {
 	Pick  int64
-	Bonus int64 // streak bonus earned at reveal; paid only if the round completes
+	Salt  string // public once revealed, so anyone can re-check the commit
+	Bonus int64  // streak bonus earned at reveal; paid only if the round completes
 }
 
 type Round struct {
@@ -81,6 +83,7 @@ type Round struct {
 	Start     int64
 	Seal      *commitreveal.Session // windows, commits, reveals and join order
 	Entries   *avl.Tree             // address -> *Entry, for revealed players
+	Commits   *avl.Tree             // address -> commit hash, kept for RoundJSON so anyone can re-check reveals
 	Settled   bool
 	Pot       int64
 	Fee       int64
@@ -135,6 +138,16 @@ func openCount(a address) int {
 		return v.(int)
 	}
 	return 0
+}
+
+// visibleASCII reports whether s has only printable ASCII characters other than space.
+func visibleASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] < 0x21 || s[i] > 0x7e {
+			return false
+		}
+	}
+	return true
 }
 
 func now() int64 {
@@ -240,6 +253,7 @@ func NewRound(cur realm, commitSecs, revealSecs int64, boardSkin int) int {
 		Start:     t,
 		Seal:      commitreveal.New(t, commitSecs, revealSecs),
 		Entries:   avl.NewTree(),
+		Commits:   avl.NewTree(),
 		BoardSkin: boardSkin,
 		Num:       targetNum,
 		Den:       targetDen,
@@ -272,6 +286,7 @@ func Join(cur realm, roundID int, commit string) {
 	if err := r.Seal.Commit(t, caller, commit); err != nil {
 		panic(err.Error())
 	}
+	r.Commits.Set(caller.String(), commit)
 	r.Pot += entryFee
 	pl := getPlayer(caller)
 	pl.Net -= entryFee
@@ -288,13 +303,13 @@ func Reveal(cur realm, roundID int, pick int64, salt string) {
 	if pick < 0 || pick > 100 {
 		panic("pick must be 0..100")
 	}
-	if len(salt) < minSaltLen {
-		panic("salt must be at least 16 characters")
+	if len(salt) < minSaltLen || len(salt) > maxSaltLen || !visibleASCII(salt) {
+		panic("salt must be 16 to 128 visible ASCII characters")
 	}
 	if err := r.Seal.Reveal(t, caller, sealedValue(roundID, caller, pick), salt); err != nil {
 		panic(err.Error())
 	}
-	r.Entries.Set(caller.String(), &Entry{Pick: pick, Bonus: updateStreak(caller, t)})
+	r.Entries.Set(caller.String(), &Entry{Pick: pick, Salt: salt, Bonus: updateStreak(caller, t)})
 	reindex(caller)
 }
 

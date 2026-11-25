@@ -25,7 +25,7 @@ export interface ChainClient {
   getClaimable(addr: string): Promise<Ugnot>
   getFeesAccrued(): Promise<Ugnot>
   feeRecipient(): Promise<string>
-  /** Leaderboard rows (the realm has no board view yet; GnoChain computes them from rounds). */
+  /** Leaderboard rows (GnoChain reads the realm's LeaderboardJSON). */
   getHall(): Promise<HallEntry[]>
   now(): Promise<number>
   // wallet
@@ -36,6 +36,11 @@ export interface ChainClient {
   switchNetwork?(): Promise<void>
   /** Present when the wallet reports account or network changes. */
   onWalletChange?(cb: () => void): void
+  /**
+   * Extra Confirm-sheet rows for what the network itself charges for a write (gas fee, storage
+   * deposit). Absent on MockChain, which has no network.
+   */
+  networkRows?(kind: string): [string, string][]
   // writes
   newRound(commitSecs: number, revealSecs: number, boardSkin: number): Promise<TxResult>
   join(roundId: number, commit: string): Promise<TxResult>

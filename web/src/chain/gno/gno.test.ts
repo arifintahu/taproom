@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ITEMS } from '../../game/constants'
+import { networkRows } from './GnoChain'
 import { hallFromBoards, itemCode, itemId, toLook, toPlayer, toRound, type LeaderRowJSON, type PlayerJSON, type RoundJSON } from './mapping'
 import { gnoStr, qAddress, qInt, qJSON, qString } from './qeval'
 import { reason } from './signers'
@@ -83,6 +84,15 @@ describe('hall from LeaderboardJSON', () => {
   it('merges the boards by address, so a regular on several boards appears once', () => {
     const hall = hallFromBoards([[row('a'), row('b')], [row('b'), row('c')], []])
     expect(hall.map((e) => e.addr)).toEqual(['a', 'b', 'c'])
+  })
+})
+
+describe('network rows in the Confirm sheet', () => {
+  it('shows the gas fee the dev key offers, and that Adena sets its own', () => {
+    expect(networkRows('join', 'dev-key')).toEqual([['Network fee', '0.03 GNOT (gas)'], ['Storage deposit', 'Set by the chain for the data this writes']])
+    expect(networkRows('settle', 'dev-key')[0][1]).toBe('0.08 GNOT (gas)')
+    expect(networkRows('join', 'adena')[0][1]).toBe('Set by Adena when you sign')
+    expect(networkRows('unknown', 'dev-key')).toEqual([])
   })
 })
 

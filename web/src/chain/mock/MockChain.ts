@@ -384,7 +384,7 @@ export class MockChain implements ChainClient {
     if (!e) throw new Error('not a player in this round')
     if (e.revealed) throw new Error('already revealed')
     if (!Number.isInteger(pick) || pick < 0 || pick > 100) throw new Error('pick must be 0..100')
-    if (salt.length < MIN_SALT_LEN) throw new Error('salt must be at least 16 characters')
+    if (salt.length < MIN_SALT_LEN || salt.length > 128 || !/^[!-~]+$/.test(salt)) throw new Error('salt must be 16 to 128 visible ASCII characters')
     if (commitHash(r.id, addr, pick, salt) !== e.commit) throw new Error('reveal does not match commit')
     e.revealed = true
     e.pick = pick

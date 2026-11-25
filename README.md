@@ -38,7 +38,7 @@ With exactly two players the lower pick always wins (two thirds of the average i
 
 ### Before you sign
 
-Every action that writes to the chain first opens the tavern's Confirm sheet: the action, the amount, the recipient realm, and for a join the pot, the 0.5% fee and what the winner would receive. Only **Approve and sign** passes it to the wallet.
+Every action that writes to the chain first opens the tavern's Confirm sheet: the action, the amount, the recipient realm, and for a join the pot, the 0.5% fee and what the winner would receive. On a real chain it also shows the network fee (the gas fee the dev key offers, or "set by Adena") and that the chain charges a storage deposit for the data the call writes. Only **Approve and sign** passes it to the wallet.
 
 ![The Confirm sheet before joining a table](media/confirm.png)
 
@@ -81,6 +81,7 @@ taproom/
     src/ui/        HUD, Barkeep, windows, Confirm sheet, chalk slate
     src/dev/       dev mode: scenarios S1-S13, guided steps and the simulation toolbar
   tools/pixelart/  the Python generator for all the pixel art in web/public/pixel
+  tools/verify/    standalone settle checker: recomputes any round from chain data
   media/           README screenshots (regenerate with pnpm screenshots)
 ```
 
@@ -139,6 +140,29 @@ The realm keeps leaderboard stats on each player (net coins, wins, average dista
 
 Each gnome costs about 100M gas to draw, and a page render may use 3B, so a page shows at most 10 of them.
 
+## Check any round yourself
+
+`tools/verify/verify-round.mjs` recomputes a settled round from chain data alone. It is plain Node with no dependencies and shares no code with the realm or the web app. It reads `RoundJSON` with one read-only query per round and checks:
+
+- every revealed pick opens its commit: `sha256("<round>:<address>:<pick>:<salt>")` equals the hash sealed at Join (the realm publishes each commit, and each salt once revealed);
+- the pot is 1 GNOT per seat;
+- with fewer than 2 reveals, everyone is refunded and no fee is taken;
+- otherwise the winners are the picks closest to 2/3 of the average (integer maths, join order), the fee is 0.5% of the pot, the rest splits evenly with the remainder to the first winner, and payouts plus the fee equal the pot.
+
+```bash
+node tools/verify/verify-round.mjs 3                 # one round
+node tools/verify/verify-round.mjs --all             # every round; exit code 1 on any mismatch
+node tools/verify/verify-round.mjs --all --rpc https://rpc.onyx.testnets.gno.land:443 --realm <realm path>
+```
+
+```
+round 5: completed, target 20.00, pot 4 GNOT, fee 0.02 GNOT
+  g1tqsx…ee5l receives 1.326668 GNOT
+  g1rfwe…ecjw receives 1.326666 GNOT
+  g15xuf…na2m receives 1.326666 GNOT
+  OK: matches the rules
+```
+
 ## Run it
 
 Requirements: Node (tested with 24) and pnpm 9. Realm work needs the Gno toolchain (v1.8).
@@ -167,19 +191,28 @@ bash realm/scripts/local-stop.sh
 ```bash
 bash realm/scripts/test.sh    # Gno tests: commitreveal (7), avatar (6), the realm (28), sealedpoll (4)
 cd web
-pnpm test                     # Vitest: rules, settle invariants, scenarios S1-S13, chain adapters (89)
+pnpm test                     # Vitest: rules, settle invariants, scenarios S1-S13, chain adapters (90)
 pnpm test:e2e                 # Playwright: room, full round, Confirm sheet paths, shop, practice, dev mode (12)
 pnpm lint && pnpm build
+cd .. && node --test tools/verify/verify-round.test.mjs   # the settle checker (6)
 ```
 
 Settle invariants are checked on 500 random rounds: credited amounts plus the fee always equal the pot, and void rounds never take a fee.
 
-## Status and known limits
+## Status
 
-- Played end to end (open, join, reveal, settle, claim) on a local gnodev chain, with the throwaway key and with the Adena extension. Not yet deployed to the public testnet.
-- Joining, revealing and settling also cost gas and a storage deposit. The Confirm sheet does not show these network costs yet.
-- A late revealer can see earlier reveals and choose to forfeit; the deposit is the price. One person with several wallets can skew the average; each wallet pays its own entry.
-- Games with a pot can fall under gambling rules in some countries. Taproom runs on testnet, where coins have no value.
+Played end to end (open, join, reveal, settle, claim) on a local gnodev chain, with the throwaway key and with the Adena extension; the settle checker matches every round played there, and each player's claimable balance equals the sum of their recomputed payouts. Not yet deployed to the public testnet.
+
+## Known limits
+
+These follow from the rules and are not bugs:
+
+- **Last revealer's option.** Reveals are public as they land, so a late revealer can see earlier picks and choose not to reveal. They lose their 1 GNOT to the pot (or, if that leaves fewer than 2 reveals, the round is void and everyone is refunded).
+- **Two-player tables.** With two players the lower pick always wins, and the second revealer can void a round they would lose by not revealing. The game is meant for 3 or more.
+- **Several wallets.** One person with several wallets can skew the average; each wallet pays its own 1 GNOT and its own fees. Points can also be farmed this way; they only buy cosmetics and never affect payouts.
+- **Network costs.** Joining, revealing and settling pay gas and a storage deposit for the data they write. Settling a full table of 10 costs the settler about 52M gas and a storage deposit, because it writes every player's payout and leaderboard position. These amounts are measured on a local chain; public testnet prices may differ.
+- **Fee recipient.** Fees go to the address that deployed the realm, set once and never changed. Only `WithdrawFees` moves them.
+- **Gambling rules.** Games with a pot can fall under gambling rules in some countries. Taproom runs on testnet, where coins have no value.
 
 ## License
 

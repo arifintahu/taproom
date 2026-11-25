@@ -368,6 +368,7 @@ export class Session {
   private after: (() => void) | null = null
 
   private request(kind: TxKind, title: string, rows: sel.Rows, run: () => Promise<TxResult>, after?: () => void) {
+    rows = [...rows, ...(this.chain.networkRows?.(kind) ?? [])]
     this.runner = run
     this.after = after ?? null
     this.setUi({ tx: { n: ++this.txSeq, kind, title, rows, stage: 'confirm' } })

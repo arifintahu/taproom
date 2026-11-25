@@ -101,7 +101,8 @@ func TestShortSaltAndCodeCallsRejected(cur realm, t *testing.T) {
 	fund()
 	Join(cross(cur), id, CommitHash(id, a, 33, "short"))
 	nowOverride = 6150
-	uassert.AbortsContains(t, cur, "at least 16", func() { Reveal(cross(cur), id, 33, "short") })
+	uassert.AbortsContains(t, cur, "16 to 128 visible ASCII", func() { Reveal(cross(cur), id, 33, "short") })
+	uassert.AbortsContains(t, cur, "16 to 128 visible ASCII", func() { Reveal(cross(cur), id, 33, "has a space in it ok") })
 
 	testing.SetRealm(testing.NewCodeRealm("gno.land/r/demo/other"))
 	uassert.AbortsContains(t, cur, "direct user call", func() { NewRound(cross(cur), 100, 100, 0) })
