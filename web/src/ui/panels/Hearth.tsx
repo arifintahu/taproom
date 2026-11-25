@@ -8,7 +8,7 @@ type StreakV = ReturnType<typeof streakView>
 
 export function StreakCard({ v }: { v: StreakV }) {
   return (
-    <section className="card stack-sm" aria-label="Weekly streak">
+    <section className="card stack-sm" aria-label="Weekly streak" data-tg="streakCard">
       <h3 className="h">{v.title}</h3>
       <p className="mu">{v.line}</p>
       <p>Week ends in {v.weekLeft} (Monday 00:00 UTC)</p>
@@ -25,7 +25,7 @@ export function FreezeCard({ v, primary }: { v: StreakV; primary?: boolean }) {
     <section className="card stack-sm" aria-label="Streak freezes">
       <h3 className="h">Ember jars (freezes): {v.freezes} of 2</h3>
       <p className="mu">Each covers one missed week, used automatically. 40 points each.</p>
-      <button type="button" className={`pb${primary ? ' pp' : ''}`} style={{ alignSelf: 'flex-start' }} disabled={!!v.freezeReason} onClick={() => session.requestFreeze()}>
+      <button type="button" className={`pb${primary ? ' pp' : ''}`} data-tg="buyFreeze" style={{ alignSelf: 'flex-start' }} disabled={!!v.freezeReason} onClick={() => session.requestFreeze()}>
         Buy an ember jar · 40 pts
       </button>
       {v.freezeReason && <p className="mu small">{v.freezeReason}</p>}

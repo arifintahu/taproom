@@ -88,7 +88,7 @@ export function TableCloseup({ round: r }: { round: Round }) {
         )}
         {v.skinNote && (
           <div className="ab" style={{ left: 160 * k, top: 66 * k, transform: 'translateX(-50%)' }}>
-            <span className="chip" style={{ color: '#cfe3ff', whiteSpace: 'nowrap' }}>{v.skinNote}</span>
+            <span className="chip" data-tg="skinNote" style={{ color: '#cfe3ff', whiteSpace: 'nowrap' }}>{v.skinNote}</span>
           </div>
         )}
       </div>

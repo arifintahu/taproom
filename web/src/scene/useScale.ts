@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
+import { ViewportContext } from './viewport'
 
 /** Scale factor for a pixel scene from the viewport width and the scroll container's width. */
 export function useScale(scale: (viewport: number, container: number) => number, initial = 2) {
   const ref = useRef<HTMLDivElement>(null)
   const [k, setK] = useState(initial)
+  const simulated = useContext(ViewportContext)
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const update = () => setK(scale(window.innerWidth, el.clientWidth))
+    const update = () => setK(scale(simulated ?? window.innerWidth, el.clientWidth))
     update()
     const ro = new ResizeObserver(update)
     ro.observe(el)
@@ -16,7 +18,7 @@ export function useScale(scale: (viewport: number, container: number) => number,
       ro.disconnect()
       window.removeEventListener('resize', update)
     }
-  }, [scale])
+  }, [scale, simulated])
   return [ref, k] as const
 }
 

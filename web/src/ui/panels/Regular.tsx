@@ -61,7 +61,7 @@ export function RegularPanel() {
           <div key={it.id} className="owned-row">
             <span className="h">{it.name}</span>
             <span className="chip" style={{ color: RARITY_COLOR[it.rarity] }}>{it.word}</span>
-            <button type="button" className="pb sm" disabled={it.disabled} onClick={() => session.requestEquip(it.id, !it.equipped)}
+            <button type="button" className="pb sm" data-tg={it.equipped ? undefined : `equip_${it.id}`} disabled={it.disabled} onClick={() => session.requestEquip(it.id, !it.equipped)}
               aria-label={`${it.equipped ? 'Unequip' : 'Equip'} ${it.name}`}>
               {it.equipped ? 'Unequip' : 'Equip'}
             </button>

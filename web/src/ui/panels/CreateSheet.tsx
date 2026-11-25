@@ -24,7 +24,7 @@ export function CreateSheet() {
         <fieldset className="fieldset">
           <legend className="h">Table</legend>
           {v.skins.map((k) => (
-            <button key={k.id} type="button" className="pb skin-choice" aria-pressed={ui.create.skin === k.id}
+            <button key={k.id} type="button" className="pb skin-choice" data-tg={`skin_${k.key}`} aria-pressed={ui.create.skin === k.id}
               onClick={() => session.setCreate({ skin: k.id })}>
               <img src={`/pixel/scene/table_room_${k.key}.svg`} alt="" className="skin-thumb" />
               <span className="grow left">{k.name}</span>
@@ -35,11 +35,11 @@ export function CreateSheet() {
         {v.locked && (
           <div role="alert" className="lock-box">
             <span className="grow">{v.lockReason}</span>
-            <button type="button" className="pb sm" onClick={() => session.toShopSkins()}>Get it from the tailor</button>
+            <button type="button" className="pb sm" data-tg="shopLink" onClick={() => session.toShopSkins()}>Get it from the tailor</button>
           </div>
         )}
         <p className="mu small">Target fixed at 2/3 of the average. 1 GNOT per seat, up to 10 seats. Opening a table costs no coins.</p>
-        <button type="button" className="pb pp" disabled={!!v.reason} onClick={() => session.requestCreate()}>Open table</button>
+        <button type="button" className="pb pp" data-tg="createConfirm" disabled={!!v.reason} onClick={() => session.requestCreate()}>Open table</button>
         {v.showReason && <p className="mu small">{v.reason}</p>}
         <button type="button" className="pb" onClick={() => session.closeSheet()}>Cancel</button>
       </div>

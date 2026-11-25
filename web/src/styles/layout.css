@@ -33,7 +33,7 @@
 
 .scrim {
   position: fixed; inset: 0; z-index: 40; background: rgba(10, 5, 3, 0.7);
-  display: flex; align-items: flex-start; justify-content: center; padding: 6vh 12px; overflow-y: auto;
+  display: flex; align-items: flex-start; justify-content: center; padding: calc(6vh + var(--dev-h, 0px)) 12px 6vh; overflow-y: auto;
 }
 .dialog { width: min(100%, 520px); }
 .dialog.wide { width: min(100%, 860px); }
@@ -209,3 +209,26 @@
 .tx-hash { align-self: stretch; align-items: center; }
 .hash { display: inline-flex; gap: 8px; align-items: center; }
 .hash code { font: 700 0.9375rem var(--font); }
+
+/* ---------- dev mode (?dev) ---------- */
+.dev { position: sticky; top: 0; z-index: 50; } /* above window backdrops (40), below toasts (60) */
+.dev-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 10px;
+  background: #241710; border-bottom: 3px solid var(--dark); font-size: 0.8125rem;
+}
+.dev-label { font-weight: 700; }
+.dev-select {
+  min-height: 44px; max-width: 260px; border: 3px solid var(--dark); background: var(--ink); color: var(--dark);
+  font: 700 0.875rem var(--font);
+}
+.dev-group { display: flex; gap: 4px; }
+.dev-clock { font-weight: 700; white-space: nowrap; }
+.dev-guide {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 14px;
+  background: var(--wood-lo); border-bottom: 3px solid var(--dark);
+}
+.dev-guide-text { flex: 1 1 300px; min-width: 0; }
+.dev-progress { flex: 0 1 140px; height: 12px; background: var(--dark); border: 2px solid #8a5a32; }
+.dev-progress > div { height: 100%; background: var(--teal); }
+.dev-free { padding: 6px 14px; background: var(--wood-lo); border-bottom: 3px solid var(--dark); }
+.dev-loading { padding: 20px; }

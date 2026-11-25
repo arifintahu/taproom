@@ -5,10 +5,10 @@ const OUT = '../media'
 
 async function open(page: Page, scn: string, width = 1280, height = 820) {
   await page.setViewportSize({ width, height })
-  await page.goto(`/?dev&scn=${scn}`)
+  await page.goto(`/?dev&scn=${scn}&mode=free`)
   await page.getByRole('group', { name: 'The taproom' }).waitFor()
   // toasts come and go; keep them out of the pictures
-  await page.addStyleTag({ content: '.toasts { display: none !important; }' })
+  await page.addStyleTag({ content: '.toasts, .dev { display: none !important; } :root { --dev-h: 0px !important; }' })
   await page.evaluate(() => document.fonts.ready)
 }
 

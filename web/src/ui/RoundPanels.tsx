@@ -59,7 +59,7 @@ export function YourMove({ round: r, v }: { round: Round; v: RoundView }) {
   return (
     <section className="win move" aria-label="Your move">
       {v.showCountdown && (
-        <div className="countdown">
+        <div className="countdown" data-tg="cd">
           <img src={`/pixel/props/hourglass_${v.phase === 'commit' ? 'full' : 'half'}.svg`} alt="" className="countdown-glass" />
           <div>
             <p className="mu small">{v.countdownLabel}</p>
@@ -68,21 +68,21 @@ export function YourMove({ round: r, v }: { round: Round; v: RoundView }) {
         </div>
       )}
       <p className="sr" aria-live="polite">{v.live}</p>
-      {v.spectator && <p>{v.spectator}</p>}
+      {v.spectator && <p data-tg="spectator">{v.spectator}</p>}
 
       {v.state === 'visitor-pick' && (
         <>
           <h2 className="h move-title">Write your number on the slip</h2>
           <p className="mu">Closest to 2/3 of the average of the revealed picks wins.</p>
           <PickInput />
-          <button type="button" className="pb pp" disabled={!!jb || !pickOk(ui.pickRaw)} onClick={() => session.requestJoin()}>
+          <button type="button" className="pb pp" data-tg="lock" disabled={!!jb || !pickOk(ui.pickRaw)} onClick={() => session.requestJoin()}>
             Seal my pick · pay 1 GNOT
           </button>
           {jb && <p className="bad">{jb}</p>}
           {v.phase === 'commit' && snap.wallet.connected && snap.wallet.balance < 1_000_000 && (
             <div className="row-wrap">
               <a href="https://faucet.gno.land" target="_blank" rel="noreferrer">Get test GNOT at faucet.gno.land</a>
-              {session.mock && <button type="button" className="pb sm" onClick={() => void session.faucet()}>Simulate faucet +10 GNOT</button>}
+              {session.mock && <button type="button" className="pb sm" data-tg="faucet" onClick={() => void session.faucet()}>Simulate faucet +10 GNOT</button>}
             </div>
           )}
         </>
@@ -97,7 +97,7 @@ export function YourMove({ round: r, v }: { round: Round; v: RoundView }) {
         <>
           <h2 className="h move-title">Break your seal</h2>
           <p>Reveal your {sealedPick ?? 'pick'} before the sand runs out, or your 1 GNOT stays in the pot.</p>
-          <button type="button" className="pb pp" disabled={!!rb} onClick={() => session.requestReveal()}>Reveal my pick</button>
+          <button type="button" className="pb pp" data-tg="reveal" disabled={!!rb} onClick={() => session.requestReveal()}>Reveal my pick</button>
         </>
       )}
       {v.state === 'revealed-wait' && <p className="good">Revealed {me?.pick}. Waiting for the others.</p>}
@@ -106,7 +106,7 @@ export function YourMove({ round: r, v }: { round: Round; v: RoundView }) {
         <>
           <h2 className="h move-title">The sand has run out</h2>
           <p className="mu">Anyone can settle, visitors too. Settling pays the pot and takes the 0.5% fee when 2 or more revealed.</p>
-          <button type="button" className="pb pp" disabled={!!rb} onClick={() => session.requestSettle()}>Settle the round</button>
+          <button type="button" className="pb pp" data-tg="settle" disabled={!!rb} onClick={() => session.requestSettle()}>Settle the round</button>
         </>
       )}
       {v.state === 'done' && (
@@ -119,7 +119,7 @@ export function YourMove({ round: r, v }: { round: Round; v: RoundView }) {
             </>
           )}
           {v.outcome === 'forfeit' && (
-            <div className="stack-sm">
+            <div className="stack-sm" data-tg="forfeit">
               <h2 className="h move-title" style={{ color: 'var(--red)' }}>You didn't break your seal</h2>
               <p>The reveal window closed before you revealed, so your pick can't count. Your 1 GNOT stayed in the pot and went to the winner. No points this round.</p>
               <div className="row"><span>Deposit lost</span><span>−1 GNOT</span></div>
@@ -133,13 +133,13 @@ export function YourMove({ round: r, v }: { round: Round; v: RoundView }) {
           )}
           {v.outcome === 'visitor' && <p className="mu">You watched this one from the bar.</p>}
           {v.claimable && (
-            <button type="button" className="pb pp" disabled={!!rb} onClick={() => session.requestClaim()}>
+            <button type="button" className="pb pp" data-tg="claim" disabled={!!rb} onClick={() => session.requestClaim()}>
               <span className="ic ic-pouch" aria-hidden="true" />{v.claimLabel}
             </button>
           )}
           {v.claimed && <p className="good">Claimed {v.myPay} GNOT to your pouch.</p>}
           {v.points > 0 && <p className="h">+{v.points} points <span className="mu" style={{ fontWeight: 400 }}>({v.pointsBreak})</span></p>}
-          <button type="button" className={`pb${v.claimable ? '' : ' pp'}`} onClick={() => session.playAgain()}>Play again</button>
+          <button type="button" className={`pb${v.claimable ? '' : ' pp'}`} data-tg="playAgain" onClick={() => session.playAgain()}>Play again</button>
         </>
       )}
       {needsRealm && rb && <p className="bad">{rb}</p>}
@@ -150,7 +150,7 @@ export function YourMove({ round: r, v }: { round: Round; v: RoundView }) {
 /** "Where the coins go": shown before you join. */
 export function Breakdown({ v }: { v: RoundView }) {
   return (
-    <section className="win stack-sm" aria-label="Money breakdown">
+    <section className="win stack-sm" aria-label="Money breakdown" data-tg="feeTable">
       <h2 className="h panel-title">Where the coins go</h2>
       <div>
         <div className="row"><span>Entry per player</span><span>1 GNOT</span></div>
@@ -183,7 +183,7 @@ export function Result({ v }: { v: RoundView }) {
   }
   return (
     <>
-      {res.chalk && <Slate title="Chalk tally" chalk={res.chalk} />}
+      {res.chalk && <Slate title="Chalk tally" chalk={res.chalk} tg="chart" />}
       <section className="win stack-sm" aria-label="Pot summary">
         <div className="row"><span>Pot</span><span>{res.pot} GNOT</span></div>
         <div className="row"><span>Tavern fee (0.5%)</span><span>{res.fee} GNOT</span></div>
@@ -192,7 +192,7 @@ export function Result({ v }: { v: RoundView }) {
           <p><strong>Tie.</strong> The prize splits: {res.tie.share} GNOT each. Any remainder goes to the first winner in join order (here {res.tie.remainder}).</p>
         )}
         {res.twoWhy && (
-          <div className="two-why">
+          <div className="two-why" data-tg="twoWhy">
             <p className="h">Why the lower pick wins with two</p>
             <p>{res.twoWhy}</p>
           </div>

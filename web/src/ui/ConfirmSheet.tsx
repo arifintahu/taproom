@@ -24,8 +24,8 @@ export function ConfirmSheet() {
           <>
             <p className="mu small">Check the amount and recipient. Nothing moves until you approve and sign with {snap.walletName}.</p>
             <div className="row-wrap">
-              <button type="button" className="pb" onClick={() => session.reject()}>Reject</button>
-              <button type="button" className="pb pp" onClick={() => void session.approve()}>Approve and sign</button>
+              <button type="button" className="pb" data-tg="reject" onClick={() => session.reject()}>Reject</button>
+              <button type="button" className="pb pp" data-tg="approve" onClick={() => void session.approve()}>Approve and sign</button>
             </div>
           </>
         )}
@@ -48,7 +48,7 @@ export function ConfirmSheet() {
             <p className="mu small">Your coins did not move.</p>
             <div className="row-wrap">
               <button type="button" className="pb" onClick={close}>Close</button>
-              <button type="button" className="pb pp" onClick={() => session.retryTx()}>Try again</button>
+              <button type="button" className="pb pp" data-tg="txRetry" onClick={() => session.retryTx()}>Try again</button>
             </div>
           </div>
         )}
@@ -56,7 +56,7 @@ export function ConfirmSheet() {
           <div role="alert" className="stack">
             <p className="h">You rejected the signature.</p>
             <p className="mu small">Nothing was sent{tx.kind === 'join' ? ' and your pick is not sealed' : ''}.</p>
-            <button type="button" className="pb" onClick={close}>Close</button>
+            <button type="button" className="pb" data-tg="txClose" onClick={close}>Close</button>
           </div>
         )}
       </div>

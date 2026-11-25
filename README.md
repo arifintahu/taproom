@@ -76,7 +76,7 @@ taproom/
     src/chain/     ChainClient interface: MockChain (scenarios) and GnoChain (qeval reads, wallet signers)
     src/scene/     the room and the table close-up, drawn as DOM layers with real buttons
     src/ui/        HUD, Barkeep, windows, Confirm sheet, chalk slate
-    src/dev/       scenarios S1-S13 used by tests and the demo
+    src/dev/       dev mode: scenarios S1-S13, guided steps and the simulation toolbar
   tools/pixelart/  the Python generator for all the pixel art in web/public/pixel
   media/           README screenshots (regenerate with pnpm screenshots)
 ```
@@ -95,7 +95,7 @@ pnpm install
 pnpm dev                  # http://localhost:5173, runs on MockChain
 ```
 
-- `?dev&scn=s2` loads a scenario (s1 to s13, s10a to s10f): first visit, win, lose, forfeit, cancelled round, tie, two players, streak at risk, shop, wallet errors, judge view, fee transparency, owner view.
+- `?dev` opens dev mode, a toolbar for demos and judging. Pick one of 18 scenarios (first visit, win, lose, forfeit, cancelled round, tie, two players, streak at risk, shop, six wallet errors, judge view, fee transparency, owner view). In Guided mode the toolbar shows each step, pulses the control to press, and runs waiting steps by itself; Next performs the step for you. It also moves the clock (+10 s, skip to reveal or settle, jump a week), pauses or speeds time 10x, simulates 375, 768 and 1280 px screens, and toggles reduced motion. `?dev&scn=s8&mode=free` opens a scenario without guidance.
 - `?chain=local` plays on a local gnodev chain with a throwaway key kept in the browser; it signs only on `127.0.0.1`.
 - `?chain=local&signer=adena` plays on the local chain with the Adena wallet (Adena's built-in "Local" network).
 

@@ -17,9 +17,9 @@ export function Hud() {
 
   return (
     <header className="hud" aria-label="Status">
-      {ui.view === 'table' && <button type="button" className="pb sm" onClick={() => session.backToRoom()}>← Taproom</button>}
+      {ui.view === 'table' && <button type="button" className="pb sm" data-tg="navTables" onClick={() => session.backToRoom()}>← Taproom</button>}
       <span className="h hud-title">Taproom</span>
-      <button type="button" className="pb sm" onClick={() => session.ledger()}
+      <button type="button" className="pb sm" data-tg="connect" onClick={() => session.ledger()}
         aria-label={on ? `Wallet ${w.address}, ${fmtG(w.balance)} GNOT` : 'Connect wallet'}>
         <span className="ic ic-pouch" aria-hidden="true" />
         <span>{on ? `${fmtG(w.balance)} GNOT` : 'Connect wallet'}</span>
@@ -28,7 +28,7 @@ export function Hud() {
       <span className="hud-gap" />
       {on && p && st && (
         <>
-          <button type="button" className="pb sm" onClick={() => session.openPanel('hearth')}
+          <button type="button" className="pb sm" data-tg="flame" onClick={() => session.openPanel('hearth')}
             style={{ color: st.atRisk ? 'var(--red)' : 'var(--amber)' }}
             aria-label={`Streak ${p.streak} weeks. Week ends in ${humanLong(st.weekLeft)}.${st.atRisk ? ' At risk.' : ''}`}>
             <span className={`ic ic-flame${flameGrow}`} aria-hidden="true" />
@@ -41,7 +41,7 @@ export function Hud() {
           </button>
         </>
       )}
-      <button type="button" className="pb sm" onClick={() => session.openCreate()}>+ New table</button>
+      <button type="button" className="pb sm" data-tg="create" onClick={() => session.openCreate()}>+ New table</button>
       <button type="button" className="pb sm" onClick={() => session.ledger()} aria-label="Settings"><span className="ic ic-gear" aria-hidden="true" /></button>
       <button type="button" className="pb sm" onClick={() => session.openPanel('howto')} aria-label="How to play"><span className="ic ic-book" aria-hidden="true" /></button>
     </header>
@@ -55,15 +55,15 @@ export function Banners() {
   return (
     <>
       {!snap.rpcOk && (
-        <div role="alert" className="banner">
+        <div role="alert" className="banner" data-tg="rpcBanner">
           <p><strong>Can't reach the {snap.networkLabel} node.</strong> Nothing you sign is sent until it's back.</p>
-          <button type="button" className="pb sm" onClick={() => void session.retry()}>Retry</button>
+          <button type="button" className="pb sm" data-tg="retry" onClick={() => void session.retry()}>Retry</button>
         </div>
       )}
       {wrongNet && (
         <div role="alert" className="banner">
           <p><strong>Adena is on {snap.wallet.network}.</strong> Taproom runs on {snap.networkLabel}.</p>
-          {session.canSwitchNetwork && <button type="button" className="pb sm" onClick={() => void session.switchNetwork()}>Switch to {snap.network}</button>}
+          {session.canSwitchNetwork && <button type="button" className="pb sm" data-tg="switchNet" onClick={() => void session.switchNetwork()}>Switch to {snap.network}</button>}
         </div>
       )}
     </>

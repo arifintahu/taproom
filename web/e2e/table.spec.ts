@@ -16,7 +16,7 @@ async function confirm(page: Page, title: RegExp) {
 }
 
 test('S2 through the UI: seal 22, reveal, settle, claim 2.985 GNOT', async ({ page }) => {
-  await page.goto('/?dev&scn=s2')
+  await page.goto('/?dev&scn=s2&mode=free')
   await page.getByRole('button', { name: /^Quick table · 2 of 10/ }).click()
   await expect(page.getByRole('heading', { name: 'Quick table · Oak table' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Money breakdown' })).toContainText('2.985 GNOT')
@@ -59,7 +59,7 @@ test('S2 through the UI: seal 22, reveal, settle, claim 2.985 GNOT', async ({ pa
 })
 
 test('S10d: rejecting in the Confirm sheet sends nothing', async ({ page }) => {
-  await page.goto('/?dev&scn=s10d')
+  await page.goto('/?dev&scn=s10d&mode=free')
   await page.getByRole('button', { name: /^Quick table/ }).first().click()
   await page.getByRole('button', { name: 'Seal my pick · pay 1 GNOT' }).click()
   await expect(page.getByRole('dialog', { name: /Confirm: Join the table/ })).toBeVisible()
@@ -72,7 +72,7 @@ test('S10d: rejecting in the Confirm sheet sends nothing', async ({ page }) => {
 })
 
 test('S10e: a failed transaction shows the chain reason and retries', async ({ page }) => {
-  await page.goto('/?dev&scn=s10e')
+  await page.goto('/?dev&scn=s10e&mode=free')
   await page.getByRole('button', { name: /^Quick table/ }).first().click()
   await page.getByRole('button', { name: 'Seal my pick · pay 1 GNOT' }).click()
   const sheet = page.getByRole('dialog', { name: /Join the table/ })

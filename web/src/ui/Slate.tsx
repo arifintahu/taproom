@@ -2,12 +2,12 @@ import type { Chalk } from '../game/closeup'
 import { fmtN } from '../game/format'
 
 /** Chalkboard result: number line with average and target, chalk pick circles, picks table. */
-export function Slate({ title, chalk: c }: { title: string; chalk: Chalk }) {
+export function Slate({ title, chalk: c, tg }: { title: string; chalk: Chalk; tg?: string }) {
   // 74 px per row: a mark with its WINNER tag is about 70 px tall, so rows never overlap
   const h = 150 + c.maxRow * 74
   const close = Math.abs(c.avg - c.target) < 14
   return (
-    <section className="slate" aria-label={title}>
+    <section className="slate" aria-label={title} data-tg={tg}>
       <h2 className="slate-title">{title}</h2>
       <div role="img" aria-label={c.summary} className="slate-line" style={{ height: h }}>
         <div className="slate-axis" />

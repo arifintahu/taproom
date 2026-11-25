@@ -11,7 +11,7 @@ export function WithdrawCard({ title, note }: { title: string; note?: string }) 
       {note && <p>{note}</p>}
       <div className="row"><span>Accrued</span><span>{v.fees} GNOT</span></div>
       <div className="row"><span>To</span><span className="addr">{snap.feeRecipient}</span></div>
-      <button type="button" className="pb pp" style={{ alignSelf: 'flex-start' }} disabled={v.withdrawDisabled} onClick={() => session.requestWithdraw()}>
+      <button type="button" className="pb pp" data-tg="withdraw" style={{ alignSelf: 'flex-start' }} disabled={v.withdrawDisabled} onClick={() => session.requestWithdraw()}>
         Withdraw {v.fees} GNOT
       </button>
     </section>

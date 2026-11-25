@@ -14,7 +14,7 @@ The rules and numbers live in the code: `web/src/game/constants.ts` and `rules.t
 | `web/src/chain/` | `ChainClient` (`types.ts`); `mock/MockChain.ts`; `gno/` (`GnoChain`, `signers` for the dev key and Adena, `qeval` parsers, `mapping`); `config.ts` picks one from the URL |
 | `web/src/state/` | `Session` store (snapshot, UI state, actions, Confirm-sheet tx flow), salt storage |
 | `web/src/scene/`, `web/src/ui/` | Room and close-up scenes; HUD, windows, Confirm sheet, slate |
-| `web/src/dev/scenarios.ts` | Scenarios S1-S13; tests and `?dev&scn=` both run them |
+| `web/src/dev/` | Dev mode (`?dev`): `scenarios.ts` (S1-S13 with seeds, steps, `done` checks and `act`s), `guide.ts` (guided-step controller), `DevHost.tsx` and `DevBar.tsx` (toolbar). Lazy-loaded; players never download it |
 | `web/screens/` | Playwright script that regenerates `media/*.png` |
 | `tools/pixelart/` | Python generator for `web/public/pixel` (the project's own art) |
 
@@ -37,6 +37,7 @@ Definition of done: Vitest, lint, build and the Playwright tests pass, plus the 
 - **Money and rules:** settle maths lives in one place, `web/src/game/rules.ts` `computeResult`, and must match `Settle` in the realm. `GnoChain` checks each settled round's winners, pot and fee against it and throws on a mismatch. Do not invent or change token or economic rules (fees, prizes, points, prices, caps) without the owner's confirmation.
 - **Realm changes:** write the Gno test first, keep effects before transfers, and keep the invariants (credited + fee == pot, void rounds take no fee, points never decrease Lifetime, freezes stay 0..2).
 - **Every write shows the Confirm sheet** (action, amount, recipient, breakdown) before the wallet. New writes go through `Session.request`.
+- **Guided targets:** a scenario step's `target` key must match a `data-tg` attribute on the control it points at; `e2e/dev.spec.ts` plays every scenario through the toolbar.
 - **Accessibility bar:** every clickable is a real button, 44 px targets, visible focus ring, Escape closes the top window only, and reduced motion is honoured.
 - **Chain safety:** do not send testnet or mainnet transactions, or post anywhere, unless the user asks. The dev-key signer must refuse any non-local RPC.
 - **Commits:** Conventional Commits; commit and push only when asked.

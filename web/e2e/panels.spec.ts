@@ -9,7 +9,7 @@ async function approve(page: Page) {
 }
 
 test('S9 through the UI: buy and equip a hat, hit the Moonlit lock, buy it, open a Moonlit table', async ({ page }) => {
-  await page.goto('/?dev&scn=s9')
+  await page.goto('/?dev&scn=s9&mode=free')
   await page.getByRole('button', { name: "Tailor's wardrobe · Shop" }).click()
   const shop = page.getByRole('dialog', { name: "The tailor's wardrobe" })
   await expect(shop.getByRole('tab', { name: 'Hats' })).toHaveAttribute('aria-selected', 'true')
@@ -50,7 +50,7 @@ test('S9 through the UI: buy and equip a hat, hit the Moonlit lock, buy it, open
 })
 
 test('practice round in How to play ends with the chalk tally and the connect prompt', async ({ page }) => {
-  await page.goto('/?dev&scn=s1')
+  await page.goto('/?dev&scn=s1&mode=free')
   await page.getByRole('button', { name: 'Barkeep · How to play' }).click()
   const win = page.getByRole('dialog', { name: 'How to play' })
   await win.getByRole('button', { name: 'Start practice' }).click()
@@ -64,7 +64,7 @@ test('practice round in How to play ends with the chalk tally and the connect pr
 })
 
 test('Hall boards, My Regular and Settings open from the room', async ({ page }) => {
-  await page.goto('/?dev&scn=s13')
+  await page.goto('/?dev&scn=s13&mode=free')
   await page.getByRole('button', { name: 'Notice board · The Hall' }).click()
   const hall = page.getByRole('dialog', { name: 'The Hall' })
   await expect(hall.getByRole('table', { name: 'Net coins' }).getByRole('row').nth(1)).toContainText('Fennel')

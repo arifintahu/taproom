@@ -7,6 +7,11 @@ import { Gnome } from './Gnome'
 import { useScale } from './useScale'
 
 const PX = '/pixel'
+/** Guided-mode target keys for the room hotspots (see dev/scenarios.ts). */
+const HOTSPOT_TG: Record<string, string> = {
+  ledger: 'connect', stairs: 'navRegular', board: 'navHall', 'table-0': 'openTable',
+  hearth: 'flame', barkeep: 'practice', wardrobe: 'navShop',
+}
 /** Deterministic pseudo-random in [0, 1) so the effects stay put between renders. */
 const R = (n: number) => ((n * 9301 + 49297) % 233280) / 233280
 
@@ -93,7 +98,7 @@ export function Room() {
         ))}
 
         {spots.map((h) => (
-          <button key={h.id} type="button" className="hs" style={at(h.rect)} aria-label={h.tag} onClick={() => runPlace(session, h.action)}>
+          <button key={h.id} type="button" className="hs" data-tg={HOTSPOT_TG[h.id]} style={at(h.rect)} aria-label={h.tag} onClick={() => runPlace(session, h.action)}>
             <span className={`tag${h.rect.x < 60 ? ' tag-l' : h.rect.x + h.rect.w > 480 ? ' tag-r' : ''}`} aria-hidden="true">{h.tag}</span>
           </button>
         ))}

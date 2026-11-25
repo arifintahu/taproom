@@ -22,7 +22,7 @@ function ItemGrid({ slot }: { slot: Slot }) {
           <h3 className="h shop-name" title={c.name}>{c.name}</h3>
           <span className="chip" style={{ color: RARITY_COLOR[c.rarity] }}>{c.word}</span>
           <p className="small">{c.price}</p>
-          <button type="button" className={`pb sm full${c.owned ? '' : ' pp'}`} disabled={!!c.reason}
+          <button type="button" className={`pb sm full${c.owned ? '' : ' pp'}`} data-tg={c.action === 'buy' ? `buy_${c.id}` : c.action === 'equip' ? `equip_${c.id}` : undefined} disabled={!!c.reason}
             aria-label={`${c.button}: ${c.name}`}
             onClick={() => (c.action === 'buy' ? session.requestBuy(c.id) : session.requestEquip(c.id, c.action === 'equip'))}>
             {c.button}
@@ -46,7 +46,7 @@ function SkinGrid() {
             <img src={`/pixel/scene/table_room_${k.key}.svg`} alt="" className="skin-img" />
             <h3 className="h shop-name" title={k.name}>{k.name}</h3>
             <p className="small">{k.status}</p>
-            <button type="button" className={`pb sm full${k.owned ? '' : ' pp'}`} disabled={k.owned || !!k.reason}
+            <button type="button" className={`pb sm full${k.owned ? '' : ' pp'}`} data-tg={k.owned ? undefined : `buy_${k.key}`} disabled={k.owned || !!k.reason}
               aria-label={k.owned ? `${k.name}: owned` : `${k.button}: ${k.name}`} onClick={() => session.requestSkin(k.id)}>
               {k.button}
             </button>
@@ -55,7 +55,7 @@ function SkinGrid() {
         ))}
       </div>
       {ui.create.fromShop && owned && (
-        <button type="button" className="pb pp" onClick={() => session.backToCreate()}>Back to New table</button>
+        <button type="button" className="pb pp" data-tg="backCreate" onClick={() => session.backToCreate()}>Back to New table</button>
       )}
     </div>
   )

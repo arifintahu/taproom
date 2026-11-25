@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useContext, useEffect } from 'react'
+import { ViewportContext } from './scene/viewport'
 import { Room } from './scene/Room'
 import { useSession } from './state/useSession'
 import { DialogBox, PlacesRow, Toasts } from './ui/DialogBox'
@@ -11,6 +12,7 @@ import { TableView } from './ui/TableView'
 
 export default function App() {
   const [{ ui }, session] = useSession()
+  const simulated = useContext(ViewportContext)
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -22,7 +24,7 @@ export default function App() {
 
   return (
     <div className={`app${ui.reduced ? ' rm' : ''}`}>
-      <div className="frame">
+      <div className="frame" style={simulated ? { maxWidth: simulated } : undefined}>
         <Hud />
         <Banners />
         <main>

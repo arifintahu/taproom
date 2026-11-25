@@ -14,13 +14,13 @@ export function ConnectSheet() {
             <div className="row"><span className="mu">Address</span><span>{w.address}</span></div>
             <div className="row"><span className="mu">Network</span><span>{snap.networkLabel}</span></div>
           </div>
-          <button type="button" className="pb pp" onClick={() => void session.connect()}>Approve connection</button>
+          <button type="button" className="pb pp" data-tg="connectOk" onClick={() => void session.connect()}>Approve connection</button>
         </div>
       ) : (
         <div className="stack">
           <p role="alert"><strong>Adena is not installed.</strong> Taproom signs with the Adena wallet extension.</p>
           <a className="pb pp" href="https://adena.app" target="_blank" rel="noreferrer">Get Adena</a>
-          <button type="button" className="pb" onClick={() => void session.recheckWallet()}>I installed it, check again</button>
+          <button type="button" className="pb" data-tg="recheck" onClick={() => void session.recheckWallet()}>I installed it, check again</button>
         </div>
       )}
     </Window>

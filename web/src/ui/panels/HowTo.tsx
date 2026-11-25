@@ -37,7 +37,7 @@ function Practice() {
       {p.phase === 'idle' && (
         <>
           <p>One round against 5 scripted regulars, about 20 seconds.</p>
-          <button type="button" className="pb pp" onClick={() => session.practiceStart()}>Start practice</button>
+          <button type="button" className="pb pp" data-tg="practice" onClick={() => session.practiceStart()}>Start practice</button>
         </>
       )}
       {p.phase === 'pick' && (
@@ -52,7 +52,7 @@ function Practice() {
               onChange={(e) => session.practiceSetPick(e.target.value)} />
           </div>
           {!ok && <p role="alert" className="bad">Enter a whole number from 0 to 100.</p>}
-          <button type="button" className="pb pp" disabled={!ok} onClick={() => session.practiceLock()}>Seal my practice slip</button>
+          <button type="button" className="pb pp" data-tg="pracLock" disabled={!ok} onClick={() => session.practiceLock()}>Seal my practice slip</button>
         </>
       )}
       {running && (
@@ -78,7 +78,7 @@ function Practice() {
         <>
           <Slate title="Practice tally" chalk={chalk(rr.list.map((x) => ({ ...x, revealed: true })), rr.winners, rr.avg, rr.target)} />
           <div className="row-wrap">
-            <button type="button" className="pb pp" onClick={() => session.showConnectPrompt()}>Continue</button>
+            <button type="button" className="pb pp" data-tg="pracDone" onClick={() => session.showConnectPrompt()}>Continue</button>
             <button type="button" className="pb" onClick={() => session.practiceStart()}>Practice again</button>
           </div>
         </>
@@ -87,7 +87,7 @@ function Practice() {
         <div className="prompt stack-sm">
           <p className="h">Ready to play for the pot?</p>
           <p>Sign the guest ledger with Adena on {snap.networkLabel}. You'll see every amount before you sign.</p>
-          <button type="button" className="pb pp" style={{ alignSelf: 'flex-start' }} onClick={() => session.openSheet('connect')}>Connect wallet</button>
+          <button type="button" className="pb pp" data-tg="connect" style={{ alignSelf: 'flex-start' }} onClick={() => session.openSheet('connect')}>Connect wallet</button>
         </div>
       )}
     </section>
