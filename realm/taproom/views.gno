@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar"
+	"gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar/v0"
 )
 
 func RoundCount() int { return roundCount }

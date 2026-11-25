@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal"
+	"gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal/v0"
 	"gno.land/p/nt/avl/v0"
 )
 

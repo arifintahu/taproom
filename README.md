@@ -85,16 +85,16 @@ taproom/
   media/           README screenshots (regenerate with pnpm screenshots)
 ```
 
-- **Realm:** `gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom`. Each round runs its sealed picks on `commitreveal`; the realm adds integer settle maths (`|3 * n * pick - 2 * sum|`), pull payments with effects before transfers, and a fee recipient that can only withdraw accrued fees. Read views return JSON for the web app.
+- **Realm:** `gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0`. Each round runs its sealed picks on `commitreveal`; the realm adds integer settle maths (`|3 * n * pick - 2 * sum|`), pull payments with effects before transfers, and a fee recipient that can only withdraw accrued fees. Read views return JSON for the web app.
 - **Web app:** one `ChainClient` interface with two implementations. `MockChain` mirrors the realm in memory for the demo and the tests. `GnoChain` reads with `vm/qeval` and signs through Adena, or through a throwaway key on a local chain.
 - **Time:** the realm uses block time. Gno has no scheduled execution, so streaks are evaluated lazily and anyone can settle.
 
 ## commitreveal: sealed choices for any realm
 
-`gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal` runs the whole commit-reveal lifecycle so a realm only writes its own rules: games with secret picks, sealed-bid auctions, private votes. A session holds the commit and reveal windows, accepts one hash per address, checks each reveal against its hash, and reports who opened what and who never revealed. It holds no coins and no global state; the importing realm stores the session and passes the block time.
+`gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal/v0` runs the whole commit-reveal lifecycle so a realm only writes its own rules: games with secret picks, sealed-bid auctions, private votes. A session holds the commit and reveal windows, accepts one hash per address, checks each reveal against its hash, and reports who opened what and who never revealed. It holds no coins and no global state; the importing realm stores the session and passes the block time.
 
 ```go
-import "gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal"
+import "gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal/v0"
 
 poll := commitreveal.New(now, 3600, 3600) // one hour to vote, one hour to open
 
@@ -112,11 +112,11 @@ late := poll.Unrevealed() // committed but never opened
 
 The API: `New`, `Phase` (commit, reveal, closed), `Commit`, `Reveal`, `Has`, `Count`, `IsRevealed`, `Value`, `Players`, `Revealed`, `Unrevealed`, plus `Hash` and `Verify`. Errors are exported values (`ErrCommitClosed`, `ErrMismatch`, ...). The shortest example is `realm/commitreveal/example_test.gno`.
 
-`realm/sealedpoll` (`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll`) is a second realm built on the package, in about 300 lines. Anyone opens a question with 2 to 8 options (`NewPoll`), voters seal a choice (`Vote` with `commitreveal.Hash(option, salt)`), then open it (`Open`). `Tally` returns the counts as JSON, and `Render` lists polls newest first, 10 per page, with their results and the number of sealed votes never opened. Options cannot contain `:` (so a vote can only open one way), windows run 1 minute to 7 days, salts must be at least 16 characters, and poll text is escaped on the page. It holds no coins: every window, vote and reveal rule comes from `commitreveal`.
+`realm/sealedpoll` (`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll/v0`) is a second realm built on the package, in about 300 lines. Anyone opens a question with 2 to 8 options (`NewPoll`), voters seal a choice (`Vote` with `commitreveal.Hash(option, salt)`), then open it (`Open`). `Tally` returns the counts as JSON, and `Render` lists polls newest first, 10 per page, with their results and the number of sealed votes never opened. Options cannot contain `:` (so a vote can only open one way), windows run 1 minute to 7 days, salts must be at least 16 characters, and poll text is escaped on the page. It holds no coins: every window, vote and reveal rule comes from `commitreveal`.
 
 ## avatar: the same gnome on chain
 
-`gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar` draws a player's gnome as SVG, matching the web app: a base gnome picked from the address (8 combinations of skin, beard and cap colour) with up to four equipped items layered on top.
+`gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar/v0` draws a player's gnome as SVG, matching the web app: a base gnome picked from the address (8 combinations of skin, beard and cap colour) with up to four equipped items layered on top.
 
 ```go
 svg := avatar.Render(addr, [4]int{107, 201, 0, 403}) // hat, outfit, held item, companion; 0 = none
@@ -178,6 +178,7 @@ pnpm dev                  # http://localhost:5173, runs on MockChain
 - `?dev` opens dev mode, a toolbar for demos and judging. Pick one of 18 scenarios (first visit, win, lose, forfeit, cancelled round, tie, two players, streak at risk, shop, six wallet errors, judge view, fee transparency, owner view). In Guided mode the toolbar shows each step, pulses the control to press, and runs waiting steps by itself; Next performs the step for you. It also moves the clock (+10 s, skip to reveal or settle, jump a week), pauses or speeds time 10x, simulates 375, 768 and 1280 px screens, and toggles reduced motion. `?dev&scn=s8&mode=free` opens a scenario without guidance.
 - `?chain=local` plays on a local gnodev chain with a throwaway key kept in the browser; it signs only on `127.0.0.1`.
 - `?chain=local&signer=adena` plays on the local chain with the Adena wallet (Adena's built-in "Local" network).
+- `?chain=onyx` plays on the Onyx testnet with the Adena wallet. Get test GNOT from the [Onyx faucet](https://faucet.gno.land).
 
 Local chain:
 
@@ -187,6 +188,15 @@ bash realm/scripts/local-fund.sh <g1address>  # sends 100 test GNOT from a premi
 bash realm/scripts/local-bot.sh join p2 0 33  # another regular joins round 0 with pick 33
 bash realm/scripts/local-stop.sh
 ```
+
+Public testnet (Onyx by default; `RPC` and `CHAIN` override it):
+
+```bash
+bash realm/scripts/testnet-deploy.sh <gnokey key> simulate    # free dry run of all four packages
+bash realm/scripts/testnet-deploy.sh <gnokey key> broadcast   # deploys commitreveal and avatar, then the realms
+```
+
+The script refuses to run if the node reports a different chain than `CHAIN`. Onyx parks every new package until its package approver enables it, about an hour after the approver's checks pass; a realm is checked only once the packages it imports are enabled. The storage deposit is taken at enable time, capped by the `max_deposit` the script sets. Look a package up at [gpas.onyx.testnets.gno.land](https://gpas.onyx.testnets.gno.land).
 
 ## Tests
 
@@ -203,7 +213,16 @@ Settle invariants are checked on 500 random rounds: credited amounts plus the fe
 
 ## Status
 
-Played end to end (open, join, reveal, settle, claim) on a local gnodev chain, with the throwaway key and with the Adena extension; the settle checker matches every round played there, and each player's claimable balance equals the sum of their recomputed payouts. Not yet deployed to the public testnet.
+Played end to end (open, join, reveal, settle, claim) on a local gnodev chain, with the throwaway key and with the Adena extension; the settle checker matches every round played there, and each player's claimable balance equals the sum of their recomputed payouts.
+
+Deployed to the Onyx testnet (`onyx-1`) on 2026-11-25, waiting for the package approver:
+
+| Package | Block | Deploy transaction |
+|---|---|---|
+| [`gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal/v0`](https://onyx.testnets.gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal/v0) | 1,398,121 | `iXMANqRyIFKJZltf5dNSoMoommqHUe4XPLfhniaawY8=` |
+| [`gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar/v0`](https://onyx.testnets.gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar/v0) | 1,398,123 | `rkwxD6yaV+hZeRfSXTIm2A9Qrlevxpd5RGRILkzk4hg=` |
+| [`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0`](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0) | 1,398,124 | `7Q2aiZlvChAiEr8Sks+a4BnqnvQulw5vcwH1fXXMZRY=` |
+| [`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll/v0`](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll/v0) | 1,398,125 | `kqpnbGedAWKnMMmTLaLT8VCdKPMIORrJwV9K6Z2IVwQ=` |
 
 ## Known limits
 

@@ -11,7 +11,7 @@ import (
 	"gno.land/p/nt/uassert/v0"
 )
 
-var realmAddr = chain.PackageAddress("gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom")
+var realmAddr = chain.PackageAddress("gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0")
 
 // fund simulates the send envelope: tests do not move coins on their own.
 func fund() {

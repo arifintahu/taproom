@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar"
+	"gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar/v0"
 )
 
 // boardPageRows caps a board page: each avatar costs about 100M gas, and a Render query may use 3B.

@@ -12,7 +12,7 @@ import { Session } from './state/session'
 
 // Default: MockChain seeded with S1 (first visit).
 // `?dev` adds the simulation toolbar: `?dev&scn=s8` picks a scenario, `&mode=free` turns guidance off.
-// `?chain=local` plays on a local gnodev chain (see realm/scripts/local-start.sh).
+// `?chain=local` plays on a local gnodev chain (see realm/scripts/local-start.sh); `?chain=onyx` on the Onyx testnet with Adena.
 const q = new URLSearchParams(location.search)
 const scn = q.has('dev') && q.get('scn') && SCENARIO[q.get('scn')!] ? q.get('scn')! : 's1'
 const root = createRoot(document.getElementById('root')!)
