@@ -124,6 +124,21 @@ uri := avatar.DataURI(addr, equipped)               // data:image/svg+xml;base64
 
 The Taproom realm exposes it as `AvatarSVG(addr)`, drawn with the items the player has equipped. The art is stored compactly in `realm/avatar/layers.gno` (about 25 KB for 48 items and the base gnomes): each layer is a palette plus colour runs, and bodies, heads and caps share one layout across their colour variants. `tools/pixelart/export_gno.py` generates that file from the same layer art the web app uses and checks that every layer decodes back to its exact pixels.
 
+## Leaderboards and pages on gno.land
+
+The realm keeps leaderboard stats on each player (net coins, wins, average distance to the target, best weekly streak) and ranks five boards: points, net coins, sharpest guesses, longest streak and style (the rarity of the items worn). `LeaderboardJSON(board, limit)` returns the top rows, at most 50, with every stat in each row.
+
+`Render` turns the realm into a small site on gnoweb, with each player's gnome drawn by the `avatar` package:
+
+| Path | Page |
+|---|---|
+| `taproom` | Open tables, recent results and the top 5 by points |
+| `taproom:board/<points|net|sharp|streak|style>` | One board, top 10 |
+| `taproom:round/<id>` | Phase, result, target, and every seat with its pick and status |
+| `taproom:player/<address>` | Rank, points, streak, wins, net coins, average distance, style |
+
+Each gnome costs about 100M gas to draw, and a page render may use 3B, so a page shows at most 10 of them.
+
 ## Run it
 
 Requirements: Node (tested with 24) and pnpm 9. Realm work needs the Gno toolchain (v1.8).
@@ -150,7 +165,7 @@ bash realm/scripts/local-stop.sh
 ## Tests
 
 ```bash
-bash realm/scripts/test.sh    # Gno tests: commitreveal (7), avatar (5), the realm (20), sealedpoll (2)
+bash realm/scripts/test.sh    # Gno tests: commitreveal (7), avatar (6), the realm (23), sealedpoll (2)
 cd web
 pnpm test                     # Vitest: rules, settle invariants, scenarios S1-S13, chain adapters (81)
 pnpm test:e2e                 # Playwright: room, full round, Confirm sheet paths, shop, practice (8)

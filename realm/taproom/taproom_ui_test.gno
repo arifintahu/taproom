@@ -163,5 +163,5 @@ func TestAvatarSVG(cur realm, t *testing.T) {
 	worn := AvatarSVG(u)
 	uassert.Equal(t, 3, strings.Count(worn, "<g>")) // the hat replaces the cap
 	uassert.NotEqual(t, base, worn)
-	uassert.True(t, strings.Contains(worn, `fill="#2a2420"`)) // tricorn colour
+	uassert.True(t, strings.Contains(worn, `stroke="#2a2420"`)) // tricorn colour
 }

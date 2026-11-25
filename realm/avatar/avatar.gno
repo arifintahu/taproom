@@ -72,16 +72,43 @@ func DataURI(addr address, equipped [4]int) string {
 	return "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(Render(addr, equipped)))
 }
 
-// layerSVG draws one layer as a <g> with one path per colour.
+// num holds "0".."64" so drawing a run needs no number formatting.
+var num [65]string
+
+func init() {
+	for i := range num {
+		num[i] = strconv.Itoa(i)
+	}
+}
+
+// dec decodes one character of the run alphabet.
+func dec(b byte) int {
+	switch {
+	case b == '-':
+		return 62
+	case b == '_':
+		return 63
+	case b <= '9':
+		return int(b - '0')
+	case b <= 'Z':
+		return int(b-'A') + 10
+	}
+	return int(b-'a') + 36
+}
+
+// layerSVG draws one layer as a <g> with one path per colour. Each run is a 1 px stroke along the
+// middle of its pixel row (M x y.5 h w), which covers exactly the run's pixels with crisp edges.
 func layerSVG(palette, runs string) string {
 	n := len(palette) / 6
 	paths := make([]strings.Builder, n)
 	for i := 0; i+3 < len(runs); i += 4 {
-		x := strings.IndexByte(alphabet, runs[i])
-		y := strings.IndexByte(alphabet, runs[i+1])
-		w := strconv.Itoa(strings.IndexByte(alphabet, runs[i+2]) + 1)
-		c := strings.IndexByte(alphabet, runs[i+3])
-		paths[c].WriteString("M" + strconv.Itoa(x) + " " + strconv.Itoa(y) + "h" + w + "v1h-" + w + "z")
+		p := &paths[dec(runs[i+3])]
+		p.WriteString("M")
+		p.WriteString(num[dec(runs[i])])
+		p.WriteString(" ")
+		p.WriteString(num[dec(runs[i+1])])
+		p.WriteString(".5h")
+		p.WriteString(num[dec(runs[i+2])+1])
 	}
 	var sb strings.Builder
 	sb.WriteString("<g>")
@@ -89,7 +116,11 @@ func layerSVG(palette, runs string) string {
 		if paths[i].Len() == 0 {
 			continue
 		}
-		sb.WriteString(`<path fill="#` + palette[i*6:i*6+6] + `" d="` + paths[i].String() + `"/>`)
+		sb.WriteString(`<path stroke="#`)
+		sb.WriteString(palette[i*6 : i*6+6])
+		sb.WriteString(`" d="`)
+		sb.WriteString(paths[i].String())
+		sb.WriteString(`"/>`)
 	}
 	sb.WriteString("</g>")
 	return sb.String()

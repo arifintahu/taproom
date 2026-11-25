@@ -9,7 +9,6 @@ import (
 	"chain/banker"
 	"chain/runtime/unsafe"
 	"strconv"
-	"strings"
 	"time"
 
 	"gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal"
@@ -97,6 +96,13 @@ type Player struct {
 	Skins     []int  // owned board skins other than the free Oak table
 	Owned     []int  // cosmetic item IDs
 	Equipped  [4]int // item ID per slot (hat, outfit, held, companion); 0 = nothing
+
+	// Leaderboard stats, updated at Join and Settle.
+	Net        int64 // ugnot credited minus entry fees paid
+	Wins       int64 // completed rounds won (a split win counts)
+	Scored     int64 // revealed picks in completed rounds
+	DistSum100 int64 // sum of distances to the target in those rounds, in hundredths
+	BestStreak int64 // longest weekly streak reached
 }
 
 var (
@@ -157,6 +163,7 @@ func credit(a address, amt int64) {
 		cur = v.(int64)
 	}
 	claimable.Set(a.String(), cur+amt)
+	getPlayer(a).Net += amt
 }
 
 // ownsSkin reports whether a may use a board skin: Oak (0) is free for everyone.
@@ -235,6 +242,7 @@ func Join(cur realm, roundID int, commit string) {
 		panic(err.Error())
 	}
 	r.Pot += entryFee
+	getPlayer(caller).Net -= entryFee
 }
 
 // Reveal opens the pick; it must match the commit. It moves the streak (in block-time order)
@@ -293,6 +301,10 @@ func Settle(cur realm, roundID int) {
 		if d < 0 {
 			d = -d
 		}
+		// distance to the target = d / (den*n); kept in hundredths for the Sharpest guesses board
+		pl := getPlayer(p)
+		pl.Scored++
+		pl.DistSum100 += (d*200 + r.Den*n) / (2 * r.Den * n) // rounded to the nearest hundredth
 		if best < 0 || d < best {
 			best = d
 			winners = []address{p}
@@ -317,6 +329,7 @@ func Settle(cur realm, roundID int) {
 		}
 		credit(w, amt)
 		getPlayer(w).Lifetime += pointsWin - pointsPlay
+		getPlayer(w).Wins++
 	}
 	r.Winners = winners
 }
@@ -375,6 +388,9 @@ func updateStreak(a address, ts int64) int64 {
 			}
 			p.LastWeek = w
 		}
+	}
+	if p.Streak > p.BestStreak {
+		p.BestStreak = p.Streak
 	}
 	p.HasPlayed = true
 	bonus := streakStep * p.Streak
@@ -519,20 +535,4 @@ func PlayerStats(a address) (lifetime, spendable, streak int64, freezes int) {
 	}
 	p := v.(*Player)
 	return p.Lifetime, p.Lifetime - p.Spent, p.Streak, p.Freezes
-}
-
-func Render(path string) string {
-	var sb strings.Builder
-	sb.WriteString("# Taproom\n\n")
-	sb.WriteString("Rounds: " + strconv.Itoa(len(rounds)) + "\n\n")
-	for _, r := range rounds {
-		status := "open"
-		if r.Settled {
-			status = "settled"
-		}
-		sb.WriteString("- round " + strconv.Itoa(r.ID) + ": " + status +
-			", players " + strconv.Itoa(r.Seal.Count()) +
-			", pot " + strconv.FormatInt(r.Pot, 10) + " ugnot\n")
-	}
-	return sb.String()
 }

@@ -12,7 +12,7 @@ The rules and numbers live in the code: `web/src/game/constants.ts` and `rules.t
 | `realm/commitreveal/` | Gno package `gno.land/p/<owner>/commitreveal`: commit-reveal sessions (windows, commits, reveals, who did not reveal). No coins, no global state. `example_test.gno` is the README sample |
 | `realm/avatar/` | Gno package `gno.land/p/<owner>/avatar`: `Render(addr, equipped [4]int)` SVG, `DataURI`, `Combo`, `ValidItem`. `layers.gno` is generated: run `python tools/pixelart/export_gno.py web/public/pixel realm/avatar/layers.gno` after any change to the layer art |
 | `realm/sealedpoll/` | Gno realm `gno.land/r/<owner>/sealedpoll`: sealed polls (`NewPoll`, `Vote`, `Open`, `Tally`, `Render`), a second realm on `commitreveal` showing the package is reusable. No coins |
-| `realm/taproom/` | Gno realm. `taproom.gno` (engine, payouts, points, streak, cosmetics; each round's `Seal` is a `commitreveal.Session`), `views.gno` (JSON views for the UI), `*_test.gno` |
+| `realm/taproom/` | Gno realm. `taproom.gno` (engine, payouts, points, streak, cosmetics, leaderboard stats; each round's `Seal` is a `commitreveal.Session`), `views.gno` (JSON views for the UI), `board.gno` (leaderboards, `LeaderboardJSON`), `render.gno` (gnoweb pages with avatars), `*_test.gno` |
 | `realm/scripts/` | Bash scripts that need the Gno toolchain: `test.sh`, `local-start.sh`, `local-fund.sh`, `local-bot.sh`, `local-probe.sh`, `local-stop.sh` |
 | `web/src/game/` | Pure logic: `rules.ts` (settle maths, streak), `constants.ts`, `selectors.ts` (blockers, Confirm rows), `room.ts`, `closeup.ts`, `panels.ts`, `hall.ts`, `avatar.ts`, `commit.ts` |
 | `web/src/chain/` | `ChainClient` (`types.ts`); `mock/MockChain.ts`; `gno/` (`GnoChain`, `signers` for the dev key and Adena, `qeval` parsers, `mapping`); `config.ts` picks one from the URL |
@@ -51,9 +51,10 @@ Definition of done: Vitest, lint, build and the Playwright tests pass, plus the 
 
 ## Gotchas learned the hard way
 
+- Render pages run under the query gas limit (3B). One avatar costs about 100M gas (`DataURI`, base64 included), so a page shows at most 10 gnomes (`boardPageRows`, 10 seats per round). The avatar draws each run as a 1 px stroke (`M x y.5 h w`) from precomputed number strings; the earlier fill paths with `strconv` cost twice as much.
 - `vm/qeval` output looks like `("…json…" string)`, `(0 int)`, `(5 int64)` and `("g1…" .uverse.address)`. The parsers in `chain/gno/qeval.ts` are pinned to these.
 - `@gnolang/gno-js-client` needs a `Buffer` polyfill in the browser (`chain/gno/polyfill.ts`, loaded first). `GnoWallet.createRandom` needs Node's crypto, so the dev key uses Web Crypto plus `fromPrivateKey`. `GnoJSONRPCProvider` is built with the async `create()`. The client loads only when `?chain` is set, which keeps the main bundle near 340 KB.
 - Adena (tested 2026-11-25) does not match its docs. `DoContract` success is `TRANSACTION_SUCCESS` with `data { hash (hex), Log, error, data }` and no block height. `ALREADY_CONNECTED` is a failure status that means connected. Adena's built-in network "Local" is chain `dev` at `http://127.0.0.1:26657`. It appears to charge its own fee estimate.
-- Deploying the realm takes about 63M gas and a 3.9 GNOT storage deposit on local gnodev. Joins, reveals and settles also pay storage deposits; the settler pays for writing other players' credits.
+- Deploying the realm takes about 89M gas and a 6.6 GNOT storage deposit on local gnodev (`avatar`: 47M gas, 6.5 GNOT). Joins, reveals and settles also pay storage deposits; the settler pays for writing other players' credits.
 - Files written by Python on Windows get CRLF, which breaks bash. `.gitattributes` forces LF; check scripts with `grep -c $'\r'`.
 - If Playwright cannot find its browser build, `PW_CHANNEL=chrome` runs the tests on an installed Chrome.

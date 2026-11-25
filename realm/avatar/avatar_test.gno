@@ -27,19 +27,19 @@ func TestBaseGnome(t *testing.T) {
 	uassert.True(t, strings.HasSuffix(svg, "</svg>"))
 	uassert.Equal(t, 3, strings.Count(svg, "<g>")) // body, head, cap
 	// combo 7: skin #553424, grey beard #b9b4ab, cap #2b6f8f
-	uassert.True(t, strings.Contains(svg, `fill="#553424"`))
-	uassert.True(t, strings.Contains(svg, `fill="#b9b4ab"`))
-	uassert.True(t, strings.Contains(svg, `fill="#2b6f8f"`))
-	// pixel runs are drawn as one path per colour: M x y h w v1 h -w z
-	uassert.True(t, strings.Contains(svg, "v1h-"))
+	uassert.True(t, strings.Contains(svg, `stroke="#553424"`))
+	uassert.True(t, strings.Contains(svg, `stroke="#b9b4ab"`))
+	uassert.True(t, strings.Contains(svg, `stroke="#2b6f8f"`))
+	// pixel runs are 1 px strokes, one path per colour: M x y.5 h w
+	uassert.True(t, strings.Contains(svg, ".5h"))
 }
 
 func TestItemsLayerInOrder(t *testing.T) {
 	// hat 107 (Pirate tricorn), outfit 201, held 312, companion 403
 	svg := Render(owner, [4]int{107, 201, 312, 403})
 	uassert.Equal(t, 6, strings.Count(svg, "<g>")) // companion, body, outfit, head, hat, held
-	uassert.False(t, strings.Contains(svg, `fill="#2b6f8f"`), "a hat replaces the cap")
-	uassert.True(t, strings.Contains(svg, `fill="#2a2420"`), "tricorn colour")
+	uassert.False(t, strings.Contains(svg, `stroke="#2b6f8f"`), "a hat replaces the cap")
+	uassert.True(t, strings.Contains(svg, `stroke="#2a2420"`), "tricorn colour")
 
 	// the companion is drawn first, before the body
 	comp := layerSVG(items[403][0], items[403][1])
@@ -63,4 +63,11 @@ func TestDataURI(t *testing.T) {
 	raw, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(uri, "data:image/svg+xml;base64,"))
 	uassert.NoError(t, err)
 	uassert.Equal(t, Render(p2, [4]int{105, 0, 0, 0}), string(raw))
+}
+
+// dec must decode every character of the run alphabet to its index.
+func TestDecMatchesAlphabet(t *testing.T) {
+	for i := 0; i < len(alphabet); i++ {
+		uassert.True(t, dec(alphabet[i]) == i, alphabet[i:i+1])
+	}
 }
