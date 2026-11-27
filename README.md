@@ -224,7 +224,7 @@ Settle invariants are checked on 500 random rounds: credited amounts plus the fe
 
 Played end to end (open, join, reveal, settle, claim) on a local gnodev chain, with the throwaway key and with the Adena extension; the settle checker matches every round played there, and each player's claimable balance equals the sum of their recomputed payouts.
 
-Live on the Onyx testnet (`onyx-1`): deployed on 2026-11-25 and enabled by the network's package approver by 2026-11-27. The realm's pages are at [onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0); play from the app at [taproom.arifintahu.com](https://taproom.arifintahu.com) with the Adena wallet.
+Live on the Onyx testnet (`onyx-1`): deployed on 2026-11-25 and enabled by the network's package approver by 2026-11-27; `taproom/v1` followed on 2026-11-27. The realm's pages are at [onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1); play from the app at [taproom.arifintahu.com](https://taproom.arifintahu.com) with the Adena wallet.
 
 | Package | Block | Deploy transaction |
 |---|---|---|
@@ -232,6 +232,31 @@ Live on the Onyx testnet (`onyx-1`): deployed on 2026-11-25 and enabled by the n
 | [`gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar/v0`](https://onyx.testnets.gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar/v0) | 1,398,123 | `rkwxD6yaV+hZeRfSXTIm2A9Qrlevxpd5RGRILkzk4hg=` |
 | [`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0`](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0) | 1,398,124 | `7Q2aiZlvChAiEr8Sks+a4BnqnvQulw5vcwH1fXXMZRY=` |
 | [`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll/v0`](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll/v0) | 1,398,125 | `kqpnbGedAWKnMMmTLaLT8VCdKPMIORrJwV9K6Z2IVwQ=` |
+| [`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1`](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1) | 1,446,450 | `3npd4pYmk/2hidwXHAMr74onvHlm/SEvFXDOyCG6Gcc=` |
+
+### A seeded round on taproom/v1
+
+[Round 0](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1:round/0) on `taproom/v1` was played on 2026-11-27 by the same four throwaway keys and script: picks 10, 50 and 20 revealed, the fourth seat forfeited, target 17.78, so pick 20 won 3.98 GNOT (pot 4 GNOT, fee 0.02).
+
+| Step | Key | Block | Transaction |
+|---|---|---|---|
+| Open a table (3 + 3 min) | p2 | 1,447,949 | `ezJ+imPpCa1m9dS2Y+4MFh/foqzVvUEntdj6muIm3gQ=` |
+| Join (sealed) | p2 | 1,447,951 | `PicLGhq4voBEdavumNddeCHjaUr7zR1l9i1Q4aeStCc=` |
+| Join (sealed) | p3 | 1,447,952 | `7MxFzND62ApiUez6jyQJ2GMKIHKPsbW1VPn6Y19ckSM=` |
+| Join (sealed) | p4 | 1,447,953 | `ANnEN5ashVI02peDIbPQr5UEIYXrITGagvQOk3yfwTc=` |
+| Join (sealed) | p5 | 1,447,954 | `2ewMpfHCPndNyYGjaThkuDcLqgBIDos5ocK6VitVP4I=` |
+| Reveal 10 | p2 | 1,448,001 | `MAlDBwpuPmC5Rg1pYrLUtc6AZP4OdnPfXYo+2Ht1bhM=` |
+| Reveal 50 | p3 | 1,448,002 | `upNdy9L9rkH5AzO22X8g8WSLKeU2xdmz7cB4n9WmTEE=` |
+| Reveal 20 | p4 | 1,448,003 | `CPWCeMLoUoIkpNQ0und6jT50zpfRLsaZJfxPyMQPn6M=` |
+| Settle (p5 forfeits; anyone may settle) | p3 | 1,448,053 | `LPeHdTbo7pFNWPDP9yNPeU9Cd3g8FyDt1SF11PcG9Zc=` |
+| Claim 3.98 GNOT | p4 | 1,448,055 | `0+wQcnKuRiWbN/Ctqd4Ge58fdPh2v0GnRRUpe3aYyjs=` |
+
+```bash
+node tools/verify/verify-round.mjs --all --rpc https://rpc.onyx.testnets.gno.land:443
+# round 0: completed, target 17.78, pot 4 GNOT, fee 0.02 GNOT ... OK: matches the rules
+```
+
+The rounds below were played on `taproom/v0` and are checked with `--realm gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0`.
 
 ### A seeded round on Onyx
 
@@ -269,7 +294,7 @@ Live on the Onyx testnet (`onyx-1`): deployed on 2026-11-25 and enabled by the n
 Round 0 is an earlier run of the same script that stopped after two reveals, so two seats forfeited and pick 10 won. The settle checker agrees with the chain on all three:
 
 ```bash
-node tools/verify/verify-round.mjs --all --rpc https://rpc.onyx.testnets.gno.land:443
+node tools/verify/verify-round.mjs --all --rpc https://rpc.onyx.testnets.gno.land:443 --realm gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0
 # round 0: completed, target 20.00, pot 4 GNOT, fee 0.02 GNOT ... OK: matches the rules
 # round 1: completed, target 17.78, pot 4 GNOT, fee 0.02 GNOT ... OK: matches the rules
 # round 2: completed, target 18.89, pot 3 GNOT, fee 0.015 GNOT ... OK: matches the rules
