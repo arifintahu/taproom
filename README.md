@@ -180,6 +180,8 @@ pnpm dev                  # http://localhost:5173, runs on MockChain
 - `?chain=local&signer=adena` plays on the local chain with the Adena wallet (Adena's built-in "Local" network).
 - `?chain=onyx` plays on the Onyx testnet with the Adena wallet. Get test GNOT from the [Onyx faucet](https://faucet.gno.land).
 
+Deploying the web app: `vercel.json` at the repo root builds `web/` with pnpm and serves `web/dist`, so a Vercel project connected to this GitHub repo needs no other settings. Commits that change nothing under `web/` (or `vercel.json`) skip the build. The deployed site runs on MockChain by default; add `?chain=onyx` to play on the testnet with Adena.
+
 Local chain:
 
 ```bash
