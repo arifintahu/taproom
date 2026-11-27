@@ -10,7 +10,7 @@ export type TxResult =
  * Item IDs are the UI's codes ('h7'); GnoChain maps them to the realm's numeric IDs.
  */
 export interface ChainClient {
-  /** Realm package path, e.g. gno.land/r/<owner>/taproom/v0. */
+  /** Realm package path, e.g. gno.land/r/<owner>/taproom/v1. */
   readonly realmPath: string
   /** Chain ID the wallet must be on. */
   readonly network: string

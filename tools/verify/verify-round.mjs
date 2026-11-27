@@ -13,7 +13,7 @@
 // Usage:
 //   node tools/verify/verify-round.mjs <round-id> [--rpc URL] [--realm PATH]
 //   node tools/verify/verify-round.mjs --all [--rpc URL] [--realm PATH]
-// Defaults: --rpc http://127.0.0.1:26657, --realm gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0
+// Defaults: --rpc http://127.0.0.1:26657, --realm gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1
 // Exit code 0 when every checked round matches, 1 when any does not, 2 on a usage or network error.
 
 import { createHash } from 'node:crypto'
@@ -108,7 +108,7 @@ function report(r, res) {
 async function main(argv) {
   const opt = (name, def) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : def }
   const rpc = opt('--rpc', 'http://127.0.0.1:26657')
-  const realm = opt('--realm', 'gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0')
+  const realm = opt('--realm', 'gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1')
   const id = argv.find((a, i) => /^\d+$/.test(a) && !['--rpc', '--realm'].includes(argv[i - 1]))
   if (!id && !argv.includes('--all')) {
     console.error('usage: verify-round.mjs <round-id> | --all [--rpc URL] [--realm PATH]')

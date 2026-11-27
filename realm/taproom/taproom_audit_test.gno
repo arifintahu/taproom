@@ -1,6 +1,7 @@
 package taproom
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
@@ -68,7 +69,7 @@ func TestBoardIndexFollowsStats(cur realm, t *testing.T) {
 	c := testutils.TestAddress("idx-c")
 	playRound(cur, t, 1795392000, [3]address{a, b, c}, [3]bool{true, true, true})
 	uassert.Equal(t, 3, len(board("style", 0)))
-	uassert.Equal(t, 3, boardIdx[4].Size())
+	uassert.Equal(t, 3, len(boardTop[4]))
 
 	// b buys and wears a legendary hat: first on the style board, still one row each
 	getPlayer(b).Lifetime += 1000
@@ -79,14 +80,14 @@ func TestBoardIndexFollowsStats(cur realm, t *testing.T) {
 	uassert.Equal(t, b, rows[0].addr)
 	uassert.Equal(t, 3, len(rows))
 	Equip(cross(cur), 0, 0)
-	uassert.Equal(t, 3, boardIdx[4].Size())
+	uassert.Equal(t, 3, len(boardTop[4]))
 
 	// a stranger who never joined is not listed, even after a write
 	s := testutils.TestAddress("idx-stranger")
 	testing.SetRealm(testing.NewUserRealm(s))
 	Equip(cross(cur), 0, 0)
 	uassert.False(t, strings.Contains(LeaderboardJSON("style", 50), s.String()))
-	uassert.Equal(t, 3, boardIdx[4].Size())
+	uassert.Equal(t, 3, len(boardTop[4]))
 }
 
 // Reveal needs a salt of 16+ characters (a short one lets anyone guess the pick from the hash), and
@@ -106,4 +107,70 @@ func TestShortSaltAndCodeCallsRejected(cur realm, t *testing.T) {
 
 	testing.SetRealm(testing.NewCodeRealm("gno.land/r/demo/other"))
 	uassert.AbortsContains(t, cur, "direct user call", func() { NewRound(cross(cur), 100, 100, 0) })
+}
+
+// Each board keeps only its top 50 rows, best first, so updating a board writes one short list
+// however many players there are. A player who climbs back is reinserted at their new place.
+func TestBoardKeepsTop50(cur realm, t *testing.T) {
+	reset()
+	var who []address
+	for i := 0; i < 55; i++ {
+		a := testutils.TestAddress("top-" + strconv.Itoa(i))
+		who = append(who, a)
+		p := getPlayer(a)
+		p.Joined = true
+		p.Lifetime = int64(10 * (i + 1))
+		reindex(a)
+	}
+	rows := board("points", 0)
+	uassert.Equal(t, maxBoardRows, len(rows))
+	uassert.Equal(t, who[54], rows[0].addr) // 550 points
+	uassert.Equal(t, who[5], rows[49].addr) // 60 points; the five lowest are not listed
+	for i := 1; i < len(rows); i++ {
+		uassert.True(t, rows[i-1].p.Lifetime >= rows[i].p.Lifetime)
+	}
+
+	// the lowest player overtakes everyone: listed first, the list stays at 50
+	getPlayer(who[0]).Lifetime = 1000
+	reindex(who[0])
+	rows = board("points", 0)
+	uassert.Equal(t, maxBoardRows, len(rows))
+	uassert.Equal(t, who[0], rows[0].addr)
+	uassert.Equal(t, who[6], rows[49].addr)
+
+	// one row per player: an unchanged reindex leaves the board as it is
+	reindex(who[0])
+	uassert.Equal(t, maxBoardRows, len(board("points", 0)))
+	uassert.Equal(t, who[0], board("points", 1)[0].addr)
+}
+
+// Commits and revealed picks live on the round's seats, in join order.
+func TestSeatsKeepCommitAndPick(cur realm, t *testing.T) {
+	reset()
+	nowOverride = 7000
+	testing.SetRealm(testing.NewUserRealm(testutils.TestAddress("host")))
+	id := NewRound(cross(cur), 100, 100, 0)
+	a := testutils.TestAddress("seat-a")
+	b := testutils.TestAddress("seat-b")
+	ha := CommitHash(id, a, 12, "a"+pad)
+	hb := CommitHash(id, b, 34, "b"+pad)
+	testing.SetRealm(testing.NewUserRealm(a))
+	fund()
+	Join(cross(cur), id, ha)
+	testing.SetRealm(testing.NewUserRealm(b))
+	fund()
+	Join(cross(cur), id, hb)
+	r := getRound(id)
+	uassert.Equal(t, 2, len(r.Seats))
+	uassert.Equal(t, ha, r.Seats[0].Commit)
+	uassert.Equal(t, hb, r.Seats[1].Commit)
+
+	nowOverride = 7150
+	Reveal(cross(cur), id, 34, "b"+pad)
+	uassert.Equal(t, int64(34), r.Seats[1].Pick)
+	uassert.Equal(t, "b"+pad, r.Seats[1].Salt)
+	uassert.Equal(t, "", r.Seats[0].Salt) // a has not revealed
+	js := RoundJSON(id)
+	uassert.True(t, strings.Contains(js, `"commit":"`+ha+`","revealed":false,"pick":null,"salt":null`))
+	uassert.True(t, strings.Contains(js, `"commit":"`+hb+`","revealed":true,"pick":34,"salt":"b`+pad+`"`))
 }

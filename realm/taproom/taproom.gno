@@ -70,11 +70,13 @@ func init() {
 // nowOverride lets tests control time; zero means use the block time.
 var nowOverride int64
 
-// Entry is what the realm keeps for a revealed pick; the commit itself lives in the round's Seal.
-type Entry struct {
-	Pick  int64
-	Salt  string // public once revealed, so anyone can re-check the commit
-	Bonus int64  // streak bonus earned at reveal; paid only if the round completes
+// Seat is one player's place at a round, in join order (the order of Seal.Players()). A short list
+// per round instead of trees keyed by address: a round has at most maxPlayers seats.
+type Seat struct {
+	Commit string // the hash sealed at Join; kept for RoundJSON so anyone can re-check the reveal
+	Pick   int64  // set at Reveal
+	Salt   string // public once revealed
+	Bonus  int64  // streak bonus earned at reveal; paid only if the round completes
 }
 
 type Round struct {
@@ -82,8 +84,7 @@ type Round struct {
 	Creator   address
 	Start     int64
 	Seal      *commitreveal.Session // windows, commits, reveals and join order
-	Entries   *avl.Tree             // address -> *Entry, for revealed players
-	Commits   *avl.Tree             // address -> commit hash, kept for RoundJSON so anyone can re-check reveals
+	Seats     []Seat                // one per player, in join order
 	Settled   bool
 	Pot       int64
 	Fee       int64
@@ -110,8 +111,7 @@ type Player struct {
 	DistSum100 int64 // sum of distances to the target in those rounds, in hundredths
 	BestStreak int64 // longest weekly streak reached
 
-	Joined    bool               // has joined a round; only such players are listed on boards
-	boardKeys [boardCount]string // this player's key in each board index; "" = not listed
+	Joined bool // has joined a round; only such players are listed on boards
 }
 
 var (
@@ -193,6 +193,16 @@ func getRound(id int) *Round {
 	return roundTree.Get(roundKey(id)).(*Round)
 }
 
+// seatOf returns the index of a's seat in r (join order), or -1.
+func seatOf(r *Round, a address) int {
+	for i, p := range r.Seal.Players() {
+		if p == a {
+			return i
+		}
+	}
+	return -1
+}
+
 func getPlayer(a address) *Player {
 	v := players.Get(a.String())
 	if v == nil {
@@ -252,8 +262,6 @@ func NewRound(cur realm, commitSecs, revealSecs int64, boardSkin int) int {
 		Creator:   creator,
 		Start:     t,
 		Seal:      commitreveal.New(t, commitSecs, revealSecs),
-		Entries:   avl.NewTree(),
-		Commits:   avl.NewTree(),
 		BoardSkin: boardSkin,
 		Num:       targetNum,
 		Den:       targetDen,
@@ -286,7 +294,7 @@ func Join(cur realm, roundID int, commit string) {
 	if err := r.Seal.Commit(t, caller, commit); err != nil {
 		panic(err.Error())
 	}
-	r.Commits.Set(caller.String(), commit)
+	r.Seats = append(r.Seats, Seat{Commit: commit})
 	r.Pot += entryFee
 	pl := getPlayer(caller)
 	pl.Net -= entryFee
@@ -309,7 +317,8 @@ func Reveal(cur realm, roundID int, pick int64, salt string) {
 	if err := r.Seal.Reveal(t, caller, sealedValue(roundID, caller, pick), salt); err != nil {
 		panic(err.Error())
 	}
-	r.Entries.Set(caller.String(), &Entry{Pick: pick, Salt: salt, Bonus: updateStreak(caller, t)})
+	i := seatOf(r, caller)
+	r.Seats[i].Pick, r.Seats[i].Salt, r.Seats[i].Bonus = pick, salt, updateStreak(caller, t)
 	reindex(caller)
 }
 
@@ -339,7 +348,7 @@ func Settle(cur realm, roundID int) {
 	var sum int64
 	for _, o := range r.Seal.Revealed() { // join order
 		revealers = append(revealers, o.Who)
-		sum += r.Entries.Get(o.Who.String()).(*Entry).Pick
+		sum += r.Seats[seatOf(r, o.Who)].Pick
 	}
 	n := int64(len(revealers))
 
@@ -353,15 +362,14 @@ func Settle(cur realm, roundID int) {
 
 	// Completed round: every revealer gets play points plus the bonus recorded at reveal.
 	for _, p := range revealers {
-		getPlayer(p).Lifetime += pointsPlay + r.Entries.Get(p.String()).(*Entry).Bonus
+		getPlayer(p).Lifetime += pointsPlay + r.Seats[seatOf(r, p)].Bonus
 	}
 
 	// Winner is closest to num/den of the average: minimise |den*n*pick - num*sum| (integer math).
 	best := int64(-1)
 	var winners []address
 	for _, p := range revealers {
-		e := r.Entries.Get(p.String()).(*Entry)
-		d := r.Den*n*e.Pick - r.Num*sum
+		d := r.Den*n*r.Seats[seatOf(r, p)].Pick - r.Num*sum
 		if d < 0 {
 			d = -d
 		}

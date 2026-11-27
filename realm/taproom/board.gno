@@ -1,14 +1,12 @@
 package taproom
 
 // Leaderboards: net coins, sharpest guesses, longest streak, points and style. Stats are kept on
-// each Player, and each board is a sorted index (an avl tree) updated whenever a listed stat moves,
-// so reading the top rows costs the same however many players there are.
+// each Player, and each board is a short sorted list of its top rows (boardTop), updated whenever
+// a listed stat moves.
 
 import (
 	"strconv"
 	"strings"
-
-	"gno.land/p/nt/avl/v0"
 )
 
 const (
@@ -56,66 +54,93 @@ func sharp100(p *Player) int64 {
 	return p.DistSum100 / p.Scored
 }
 
-// boardIdx holds one sorted index per board: boardKey -> address.
-var boardIdx = newBoardIdx()
-
-func newBoardIdx() [boardCount]*avl.Tree {
-	var t [boardCount]*avl.Tree
-	for i := range t {
-		t[i] = avl.NewTree()
-	}
-	return t
+// boardRank is one row of a board's top list: the player and the value they are ranked by.
+type boardRank struct {
+	Addr address
+	V    int64
 }
 
-// boardKey orders a player on board i, best first; ties go by address. ok is false when the
-// player is not listed: before their first Join, or on Sharpest guesses before a completed round.
-func boardKey(i int, a address, p *Player) (key string, ok bool) {
+// boardTop holds each board's top maxBoardRows rows, best first. A short list instead of an index
+// over every player: an update rewrites one list, which stops growing once it is full, so a
+// player's first join adds little storage however many players there are. A listed player whose
+// value drops out of the top rows leaves the list; a player just below returns when their own
+// stats next change, so the rows near the bottom can lag until then.
+var boardTop [boardCount][]boardRank
+
+// boardValue is what a player is ranked by on board i. ok is false when the player is not listed:
+// before their first Join, or on Sharpest guesses before a completed round.
+func boardValue(i int, p *Player) (v int64, ok bool) {
 	if !p.Joined {
-		return "", false
+		return 0, false
 	}
-	var v int64
-	lowerIsBetter := false
 	switch boards[i][0] {
 	case "points":
-		v = p.Lifetime
+		return p.Lifetime, true
 	case "net":
-		v = p.Net
+		return p.Net, true
 	case "sharp":
 		if p.Scored == 0 {
-			return "", false
+			return 0, false
 		}
-		v, lowerIsBetter = sharp100(p), true
+		return sharp100(p), true
 	case "streak":
-		v = p.BestStreak
-	case "style":
-		v = styleOf(p.Equipped)
+		return p.BestStreak, true
 	}
-	k := uint64(v) ^ (1 << 63) // signed order as unsigned order
-	if !lowerIsBetter {
-		k = ^k
-	}
-	h := strconv.FormatUint(k, 16)
-	for len(h) < 16 {
-		h = "0" + h
-	}
-	return h + ":" + a.String(), true
+	return styleOf(p.Equipped), true
 }
 
-// reindex moves a player's rows in the board indexes after their stats change.
+// ahead reports whether row x ranks above row y on board i: a better value (lower is better only
+// for Sharpest guesses), then the lower address.
+func ahead(i int, x, y boardRank) bool {
+	if x.V != y.V {
+		if boards[i][0] == "sharp" {
+			return x.V < y.V
+		}
+		return x.V > y.V
+	}
+	return x.Addr < y.Addr
+}
+
+// reindex moves a player's rows on the boards after their stats change.
 func reindex(a address) {
 	p := getPlayer(a)
 	for i := 0; i < boardCount; i++ {
-		k, ok := boardKey(i, a, p)
-		if k == p.boardKeys[i] {
-			continue
+		v, ok := boardValue(i, p)
+		list := boardTop[i]
+		pos := -1
+		for j, r := range list {
+			if r.Addr == a {
+				pos = j
+				break
+			}
 		}
-		if p.boardKeys[i] != "" {
-			boardIdx[i].Remove(p.boardKeys[i])
+		if pos >= 0 && ok && list[pos].V == v {
+			continue // already listed at this value
+		}
+		changed := false
+		if pos >= 0 {
+			list = append(list[:pos], list[pos+1:]...)
+			changed = true
 		}
 		if ok {
-			boardIdx[i].Set(k, a)
+			row := boardRank{Addr: a, V: v}
+			j := 0
+			for j < len(list) && ahead(i, list[j], row) {
+				j++
+			}
+			if j < maxBoardRows {
+				list = append(list, boardRank{})
+				copy(list[j+1:], list[j:])
+				list[j] = row
+				if len(list) > maxBoardRows {
+					list = list[:maxBoardRows]
+				}
+				changed = true
+			}
 		}
-		p.boardKeys[i] = k
+		if changed {
+			boardTop[i] = list
+		}
 	}
 }
 
@@ -134,11 +159,12 @@ func board(name string, limit int) []boardRow {
 		limit = maxBoardRows
 	}
 	var rows []boardRow
-	boardIdx[idx].Iterate("", "", func(_ string, v any) bool {
-		a := v.(address)
-		rows = append(rows, boardRow{addr: a, p: players.Get(a.String()).(*Player)})
-		return len(rows) >= limit
-	})
+	for _, r := range boardTop[idx] {
+		if len(rows) >= limit {
+			break
+		}
+		rows = append(rows, boardRow{addr: r.Addr, p: players.Get(r.Addr.String()).(*Player)})
+	}
 	return rows
 }
 

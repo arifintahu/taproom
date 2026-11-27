@@ -11,7 +11,7 @@ import (
 	"gno.land/p/nt/uassert/v0"
 )
 
-var realmAddr = chain.PackageAddress("gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0")
+var realmAddr = chain.PackageAddress("gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1")
 
 // fund simulates the send envelope: tests do not move coins on their own.
 func fund() {
@@ -29,7 +29,7 @@ func reset() {
 	openRounds = avl.NewTree()
 	openByCreator = avl.NewTree()
 	recentSettled = nil
-	boardIdx = newBoardIdx()
+	boardTop = [boardCount][]boardRank{}
 	players = avl.NewTree()
 	claimable = avl.NewTree()
 	nowOverride = 0

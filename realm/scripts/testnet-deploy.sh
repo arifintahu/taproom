@@ -35,6 +35,13 @@ find "$WORK" -name '*_test.gno' -delete
 
 deploy() { # <dir> <package path> <gas wanted> <max deposit in ugnot>
   echo "== $2 ($MODE)"
+  # a path that is already on chain (live, or parked for the approver) is skipped: addpkg cannot
+  # replace a live package, and a fix ships as a new version path
+  if gnokey query vm/qfile -data "$2" -remote "$RPC" 2>&1 | grep -q '^data:' ||
+     gnokey query vm/qpkgmeta_json -data "$2" -remote "$RPC" 2>&1 | grep -q '"status":"inert"'; then
+    echo "already on chain, skipped"
+    return
+  fi
   echo "" | gnokey maketx addpkg -pkgdir "$WORK/$1" -pkgpath "$2" \
     -gas-wanted "$3" -gas-fee "$(( $3 / 1000 ))ugnot" -max-deposit "$4ugnot" \
     -chainid "$CHAIN" -remote "$RPC" "${SIM[@]}" -broadcast -insecure-password-stdin "$KEY" 2>&1 |

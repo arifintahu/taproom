@@ -92,13 +92,13 @@ func writeRound(sb *strings.Builder, r *Round) {
 			sb.WriteString(",")
 		}
 		// a pick and its salt stay hidden until their owner reveals them
+		s := r.Seats[i]
+		revealed := r.Seal.IsRevealed(p)
 		pick, salt, bonus := "null", "null", int64(0)
-		if v := r.Entries.Get(p.String()); v != nil {
-			e := v.(*Entry)
-			pick, salt, bonus = i64(e.Pick), strconv.Quote(e.Salt), e.Bonus
+		if revealed {
+			pick, salt, bonus = i64(s.Pick), strconv.Quote(s.Salt), s.Bonus
 		}
-		commit, _ := r.Commits.Get(p.String()).(string)
-		sb.WriteString(`{"addr":"` + p.String() + `","commit":"` + commit + `","revealed":` + strconv.FormatBool(r.Seal.IsRevealed(p)))
+		sb.WriteString(`{"addr":"` + p.String() + `","commit":"` + s.Commit + `","revealed":` + strconv.FormatBool(revealed))
 		sb.WriteString(`,"pick":` + pick + `,"salt":` + salt + `,"bonus":` + i64(bonus) + "}")
 	}
 	sb.WriteString("]}")

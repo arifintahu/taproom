@@ -164,8 +164,8 @@ func renderRound(r *Round) string {
 	sb.WriteString("| | Regular | Pick | Status |\n|---|---|---|---|\n")
 	for _, p := range r.Seal.Players() {
 		pick, status := "sealed", "sealed"
-		if v := r.Entries.Get(p.String()); v != nil {
-			pick = i64(v.(*Entry).Pick)
+		if r.Seal.IsRevealed(p) {
+			pick = i64(r.Seats[seatOf(r, p)].Pick)
 			status = "revealed"
 		}
 		if r.Settled {
@@ -210,14 +210,14 @@ func resultLine(r *Round) string {
 	}
 	var names []string
 	for _, w := range r.Winners {
-		names = append(names, "["+short(w)+"]("+link("player/"+w.String())+") with "+i64(r.Entries.Get(w.String()).(*Entry).Pick))
+		names = append(names, "["+short(w)+"]("+link("player/"+w.String())+") with "+i64(r.Seats[seatOf(r, w)].Pick))
 	}
 	return "won by " + strings.Join(names, " and ") + ", pot " + gnot(r.Pot) + ", fee " + gnot(r.Fee)
 }
 
 func revealedSum(r *Round) (sum, n int64) {
 	for _, o := range r.Seal.Revealed() {
-		sum += r.Entries.Get(o.Who.String()).(*Entry).Pick
+		sum += r.Seats[seatOf(r, o.Who)].Pick
 		n++
 	}
 	return sum, n

@@ -91,7 +91,7 @@ taproom/
   media/           README screenshots (regenerate with pnpm screenshots)
 ```
 
-- **Realm:** `gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0`. Each round runs its sealed picks on `commitreveal`; the realm adds integer settle maths (`|3 * n * pick - 2 * sum|`), pull payments with effects before transfers, and a fee recipient that can only withdraw accrued fees. Read views return JSON for the web app.
+- **Realm:** `gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1` (the first version, `taproom/v0`, stays live with the rounds logged under Status). Each round runs its sealed picks on `commitreveal`; the realm adds integer settle maths (`|3 * n * pick - 2 * sum|`), pull payments with effects before transfers, and a fee recipient that can only withdraw accrued fees. Read views return JSON for the web app.
 - **Web app:** one `ChainClient` interface with two implementations. `MockChain` mirrors the realm in memory for the demo and the tests. `GnoChain` reads with `vm/qeval` and signs through Adena, or through a throwaway key on a local chain.
 - **Time:** the realm uses block time. Gno has no scheduled execution, so streaks are evaluated lazily and anyone can settle.
 
@@ -133,7 +133,7 @@ The Taproom realm exposes it as `AvatarSVG(addr)`, drawn with the items the play
 
 ## Leaderboards and pages on gno.land
 
-The realm keeps leaderboard stats on each player (net coins, wins, average distance to the target, best weekly streak) and ranks five boards: points, net coins, sharpest guesses, longest streak and style (the rarity of the items worn). `LeaderboardJSON(board, limit)` returns the top rows, at most 50, with every stat in each row. Each board is a sorted index updated when a stat moves, so reading the top rows stays cheap however many players there are; only players who have joined a round are listed.
+The realm keeps leaderboard stats on each player (net coins, wins, average distance to the target, best weekly streak) and ranks five boards: points, net coins, sharpest guesses, longest streak and style (the rarity of the items worn). `LeaderboardJSON(board, limit)` returns the top rows, at most 50, with every stat in each row. Each board keeps only its top 50 rows, as a short sorted list updated when a stat moves, so neither reading a board nor joining as a new player gets more expensive as players arrive; only players who have joined a round are listed.
 
 `Render` turns the realm into a small site on gnoweb, with each player's gnome drawn by the `avatar` package:
 
@@ -282,7 +282,8 @@ These follow from the rules and are not bugs:
 - **Last revealer's option.** Reveals are public as they land, so a late revealer can see earlier picks and choose not to reveal. They lose their 1 GNOT to the pot (or, if that leaves fewer than 2 reveals, the round is void and everyone is refunded).
 - **Two-player tables.** With two players the lower pick always wins, and the second revealer can void a round they would lose by not revealing. The game is meant for 3 or more.
 - **Several wallets.** One person with several wallets can skew the average; each wallet pays its own 1 GNOT and its own fees. Points can also be farmed this way; they only buy cosmetics and never affect payouts.
-- **Network costs.** Writes pay gas and a storage deposit of 100 ugnot per byte they add to the chain. Measured on Onyx: a player's first join writes 12-19 KB (1.2-1.9 GNOT), because it creates the player record and its leaderboard entries; later joins write 3.7-5.3 KB (0.37-0.53 GNOT); a reveal about 3.2 KB (0.32 GNOT); settling three seats about 3.7 KB (0.37 GNOT); a claim nothing. Settling a full table of 10 costs the settler more (about 52M gas on a local chain), since it writes every player's payout and leaderboard position.
+- **Network costs.** Writes pay gas and a storage deposit of 100 ugnot per byte they add to the chain. With `taproom/v1`, measured on a local chain: a player's first join writes about 9.9 KB (0.99 GNOT), mostly the new player record and its commit; later joins about 3.5-3.8 KB (0.35-0.38 GNOT); a reveal about 0.2 KB; settling three seats about 1.8 KB (0.18 GNOT); a claim nothing. `taproom/v0` kept leaderboards and each round's picks in trees and wrote about twice as much (measured on Onyx: 12-19 KB for a first join, about 3.2 KB per reveal).
+- **Leaderboard tail.** Each board keeps its top 50 rows. Points and best streak only rise, so those boards are exact. On the net, sharpest and style boards, a listed player whose value drops off the list is removed, and a player just below the list returns when their own stats next change, so the last rows can lag until then.
 - **Fee recipient.** Fees go to the address that deployed the realm, set once and never changed. Only `WithdrawFees` moves them.
 
 ## License
