@@ -13,7 +13,7 @@ The rules and numbers live in the code: `web/src/game/constants.ts` and `rules.t
 | `realm/avatar/` | Gno package `gno.land/p/<owner>/avatar/v0`: `Render(addr, equipped [4]int)` SVG, `DataURI`, `Combo`, `ValidItem`. `layers.gno` is generated: run `python tools/pixelart/export_gno.py web/public/pixel realm/avatar/layers.gno` after any change to the layer art |
 | `realm/sealedpoll/` | Gno realm `gno.land/r/<owner>/sealedpoll/v0`: sealed polls (`NewPoll`, `Vote`, `Open`, `Tally`, `Render`), a second realm on `commitreveal` showing the package is reusable. No coins |
 | `realm/taproom/` | Gno realm. `taproom.gno` (engine, payouts, points, streak, cosmetics, leaderboard stats; each round's `Seal` is a `commitreveal.Session`), `views.gno` (JSON views for the UI), `board.gno` (leaderboards, `LeaderboardJSON`), `render.gno` (gnoweb pages with avatars), `*_test.gno` |
-| `realm/scripts/` | Bash scripts that need the Gno toolchain: `test.sh`, `local-start.sh`, `local-fund.sh`, `local-bot.sh`, `local-probe.sh`, `local-stop.sh`, `testnet-deploy.sh` |
+| `realm/scripts/` | Bash scripts that need the Gno toolchain: `test.sh`, `local-start.sh`, `local-fund.sh`, `local-bot.sh`, `local-probe.sh`, `local-stop.sh`, `testnet-deploy.sh`, `testnet-round.sh` |
 | `web/src/game/` | Pure logic: `rules.ts` (settle maths, streak), `constants.ts`, `selectors.ts` (blockers, Confirm rows), `room.ts`, `closeup.ts`, `panels.ts`, `avatar.ts`, `commit.ts` |
 | `web/src/chain/` | `ChainClient` (`types.ts`); `mock/MockChain.ts`; `gno/` (`GnoChain`, `signers` for the dev key and Adena, `qeval` parsers, `mapping`; the Hall reads the realm's `LeaderboardJSON`); `config.ts` picks one from the URL |
 | `web/src/state/` | `Session` store (snapshot, UI state, actions, Confirm-sheet tx flow), salt storage |
@@ -39,7 +39,7 @@ Deploy order matters: `commitreveal` before the realm that imports it (`local-st
 
 Local chain: run `local-start.sh` in its own terminal or as a background task; it stays attached to `gnodev` until stopped. Then open `http://localhost:5173/?chain=local` (dev key) or `?chain=local&signer=adena`.
 
-Testnet: `testnet-deploy.sh <key> simulate|broadcast` (Onyx by default). `?chain=onyx` reads Onyx and signs with Adena only. Every package path is versioned (`/v0`); a fix to a deployed package needs a new version path, and importers must follow it.
+Testnet: `testnet-deploy.sh <key> simulate|broadcast` (Onyx by default); `testnet-round.sh <funder key>` tops four test keys up to 3 GNOT and plays one seeded round, printing a markdown table of every transaction. On Onyx it takes about 10 minutes, so run it without a short timeout; salts are saved to `~/.taproom-salts/` before each Join so an interrupted run can still reveal. `?chain=onyx` reads Onyx and signs with Adena only. Every package path is versioned (`/v0`); a fix to a deployed package needs a new version path, and importers must follow it.
 
 Definition of done: Vitest, lint, build and the Playwright tests pass, plus the Gno tests (and `gno lint`, `gno fmt`) when the realm changed, and the settle checker tests when settle rules or `RoundJSON` changed. Report real output.
 

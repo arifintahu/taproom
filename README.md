@@ -194,6 +194,7 @@ Public testnet (Onyx by default; `RPC` and `CHAIN` override it):
 ```bash
 bash realm/scripts/testnet-deploy.sh <gnokey key> simulate    # free dry run of all four packages
 bash realm/scripts/testnet-deploy.sh <gnokey key> broadcast   # deploys commitreveal and avatar, then the realms
+bash realm/scripts/testnet-round.sh <gnokey key>              # funds four test keys and plays one seeded round
 ```
 
 The script refuses to run if the node reports a different chain than `CHAIN`. Onyx parks every new package until its package approver enables it, usually about an hour after the approver's checks pass (this deploy took about two days while the queue was slow); a realm is checked only once the packages it imports are enabled. The storage deposit is taken at enable time, capped by the `max_deposit` the script sets. Look a package up at [gpas.onyx.testnets.gno.land](https://gpas.onyx.testnets.gno.land).
@@ -223,6 +224,31 @@ Live on the Onyx testnet (`onyx-1`): deployed on 2026-11-25 and enabled by the n
 | [`gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar/v0`](https://onyx.testnets.gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar/v0) | 1,398,123 | `rkwxD6yaV+hZeRfSXTIm2A9Qrlevxpd5RGRILkzk4hg=` |
 | [`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0`](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0) | 1,398,124 | `7Q2aiZlvChAiEr8Sks+a4BnqnvQulw5vcwH1fXXMZRY=` |
 | [`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll/v0`](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll/v0) | 1,398,125 | `kqpnbGedAWKnMMmTLaLT8VCdKPMIORrJwV9K6Z2IVwQ=` |
+
+### A seeded round on Onyx
+
+[Round 1](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0:round/1) was played on 2026-11-27 by four throwaway keys with `realm/scripts/testnet-round.sh`. Picks 10, 50 and 20 were revealed and the fourth seat forfeited: the average of the revealed picks is 26.67, the target 17.78, so pick 20 won the 4 GNOT pot less the 0.02 GNOT fee.
+
+| Step | Key | Block | Transaction |
+|---|---|---|---|
+| Open a table (3 + 3 min) | p2 | 1,444,987 | `61p44Z7pGlABToPp5Bsxe9Ca/qRtjh48Nccnn/I8T3Q=` |
+| Join (sealed) | p2 | 1,444,988 | `9fStTT/vSpUU/rsYhEH7i5+V1ECTqH0WVyzwi7FE144=` |
+| Join (sealed) | p3 | 1,444,989 | `bzPTOfQggC6pg7fXMNDtes4fli+jLDzP9Mgh9CE0HyE=` |
+| Join (sealed) | p4 | 1,444,990 | `rvC4TkEpuMRS4wY1YF8gJkGlulAUdB3S4BlC18GGrfo=` |
+| Join (sealed) | p5 | 1,444,991 | `Zz5Ba1X+BLD+E0PH+/2HAfaBdQIbwntkaUYB1lNCwJw=` |
+| Reveal 10 | p2 | 1,445,039 | `Ysy0JvR3u3/vuu/9D1GdQ8V2goxx8CFq53GZc24abyQ=` |
+| Reveal 50 | p3 | 1,445,040 | `glNzlj7hpoe0URMxcRlDbostZDPlCP8P/AtM+IJdBh0=` |
+| Reveal 20 | p4 | 1,445,041 | `Lb4rBOMLokO1KyHYU6Is20QgvDT1gDhztdDIUVEIgXE=` |
+| Settle (p5 forfeits; anyone may settle) | p3 | 1,445,093 | `I2Eohreh3VK5QsYBHmXtF/WoSdmaTMv8hlULMaH2tSQ=` |
+| Claim 3.98 GNOT | p4 | 1,445,095 | `TN2SdmdS+ejbDRGO8fw0mJ/dtIfuot8xS98jHYvuXOU=` |
+
+Round 0 is an earlier run of the same script that stopped after two reveals, so two seats forfeited and pick 10 won. The settle checker agrees with the chain on both:
+
+```bash
+node tools/verify/verify-round.mjs --all --rpc https://rpc.onyx.testnets.gno.land:443
+# round 0: completed, target 20.00, pot 4 GNOT, fee 0.02 GNOT ... OK: matches the rules
+# round 1: completed, target 17.78, pot 4 GNOT, fee 0.02 GNOT ... OK: matches the rules
+```
 
 ## Known limits
 
