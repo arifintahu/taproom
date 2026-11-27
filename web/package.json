@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "screenshots": "playwright test --config playwright.screens.config.ts"
+    "screenshots": "playwright test --config playwright.screens.config.ts",
+    "demo": "playwright test --config playwright.demo.config.ts"
   },
   "dependencies": {
     "@gnolang/gno-js-client": "^3.1.0",
