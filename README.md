@@ -313,4 +313,4 @@ These follow from the rules and are not bugs:
 
 ## License
 
-Not chosen yet.
+[Apache-2.0](LICENSE).
