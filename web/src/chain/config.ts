@@ -22,8 +22,7 @@ export const ONYX = {
   realmPath: REALM,
 }
 
-export function chainFromUrl(q: URLSearchParams): GnoChain | null {
-  const chain = q.get('chain')
+export function chainFromUrl(chain: string, q: URLSearchParams): GnoChain | null {
   if (chain === 'onyx') {
     const signer = new AdenaSigner({ chainId: ONYX.network, chainName: ONYX.networkLabel, rpcUrl: ONYX.rpc })
     return new GnoChain({ ...ONYX, signer })

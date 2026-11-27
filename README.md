@@ -6,9 +6,9 @@ Taproom is an entry for the Gnome Tavern Hackathon. It is a community project wi
 
 **Play it at [taproom.arifintahu.com](https://taproom.arifintahu.com):**
 
-- [taproom.arifintahu.com](https://taproom.arifintahu.com) opens the tavern on a simulated chain: no wallet, no coins.
-- [taproom.arifintahu.com/?dev](https://taproom.arifintahu.com/?dev) adds the demo toolbar with guided scenarios (win, lose, forfeit, tie, cancelled round, streaks, the shop and more).
-- [taproom.arifintahu.com/?chain=onyx](https://taproom.arifintahu.com/?chain=onyx) plays for real on the Onyx testnet with the [Adena](https://www.adena.app) wallet. Get test GNOT from the [Onyx faucet](https://faucet.gno.land).
+- [taproom.arifintahu.com](https://taproom.arifintahu.com) plays for real on the Onyx testnet with the [Adena](https://www.adena.app) wallet. Get test GNOT from the [Onyx faucet](https://faucet.gno.land).
+- [taproom.arifintahu.com/?chain=mock](https://taproom.arifintahu.com/?chain=mock) opens the tavern on a simulated chain: no wallet, no coins.
+- [taproom.arifintahu.com/?dev](https://taproom.arifintahu.com/?dev) runs the simulated chain with the demo toolbar and guided scenarios (win, lose, forfeit, tie, cancelled round, streaks, the shop and more).
 
 ![The taproom: tables, hearth, barkeep and wardrobe](media/room.png)
 
@@ -186,7 +186,7 @@ pnpm dev                  # http://localhost:5173, runs on MockChain
 - `?chain=local&signer=adena` plays on the local chain with the Adena wallet (Adena's built-in "Local" network).
 - `?chain=onyx` plays on the Onyx testnet with the Adena wallet. Get test GNOT from the [Onyx faucet](https://faucet.gno.land).
 
-Deploying the web app: `vercel.json` at the repo root builds `web/` with pnpm and serves `web/dist`, so a Vercel project connected to this GitHub repo needs no other settings; it pins pnpm 9.15.9 because the lockfile lives in `web/`, where Vercel cannot detect its version. The live site, [taproom.arifintahu.com](https://taproom.arifintahu.com), deploys from `main` this way. Commits that change nothing under `web/` (or `vercel.json`) skip the build. The deployed site runs on MockChain by default; add `?chain=onyx` to play on the testnet with Adena.
+Deploying the web app: `vercel.json` at the repo root builds `web/` with pnpm and serves `web/dist`, so a Vercel project connected to this GitHub repo needs no other settings; it pins pnpm 9.15.9 because the lockfile lives in `web/`, where Vercel cannot detect its version. The live site, [taproom.arifintahu.com](https://taproom.arifintahu.com), deploys from `main` this way. Commits that change nothing under `web/` (or `vercel.json`) skip the build. The build sets `VITE_DEFAULT_CHAIN=onyx`, so the deployed site plays on Onyx unless the URL names another chain (`?chain=mock`, or `?dev` for the demo toolbar); a local `pnpm dev` stays on MockChain.
 
 Local chain:
 
@@ -224,7 +224,7 @@ Settle invariants are checked on 500 random rounds: credited amounts plus the fe
 
 Played end to end (open, join, reveal, settle, claim) on a local gnodev chain, with the throwaway key and with the Adena extension; the settle checker matches every round played there, and each player's claimable balance equals the sum of their recomputed payouts.
 
-Live on the Onyx testnet (`onyx-1`): deployed on 2026-11-25 and enabled by the network's package approver by 2026-11-27. The realm's pages are at [onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0); play from the app at [taproom.arifintahu.com/?chain=onyx](https://taproom.arifintahu.com/?chain=onyx) with the Adena wallet.
+Live on the Onyx testnet (`onyx-1`): deployed on 2026-11-25 and enabled by the network's package approver by 2026-11-27. The realm's pages are at [onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0); play from the app at [taproom.arifintahu.com](https://taproom.arifintahu.com) with the Adena wallet.
 
 | Package | Block | Deploy transaction |
 |---|---|---|

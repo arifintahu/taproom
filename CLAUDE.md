@@ -20,7 +20,7 @@ The rules and numbers live in the code: `web/src/game/constants.ts` and `rules.t
 | `web/src/scene/`, `web/src/ui/` | Room and close-up scenes; HUD, windows, Confirm sheet, slate |
 | `web/src/dev/` | Dev mode (`?dev`): `scenarios.ts` (S1-S13 with seeds, steps, `done` checks and `act`s), `guide.ts` (guided-step controller), `DevHost.tsx` and `DevBar.tsx` (toolbar). Lazy-loaded; players never download it |
 | `web/screens/` | Playwright script that regenerates `media/*.png` |
-| `vercel.json` | Vercel build for the web app from the repo root (install and build in `web/` with pnpm pinned to 9.15.9 through npx, output `web/dist`, skip builds for commits outside `web/`). Deployed at https://taproom.arifintahu.com from `main` |
+| `vercel.json` | Vercel build for the web app from the repo root (install and build in `web/` with pnpm pinned to 9.15.9 through npx, output `web/dist`, skip builds for commits outside `web/`). Deployed at https://taproom.arifintahu.com from `main`; the build sets `VITE_DEFAULT_CHAIN=onyx`, so that site defaults to Onyx (`web/src/chain/pick.ts`: `?chain=` wins, `?dev` alone stays on MockChain, `?chain=mock` forces it) |
 | `web/public/favicon.svg` | The gnome's head and red cap (base gnome 0), cropped from the layer art |
 | `tools/pixelart/` | Python generator for `web/public/pixel` (the project's own art) |
 | `tools/verify/` | `verify-round.mjs`: standalone settle checker (plain Node, no dependencies, no code shared with the realm or web app); `verify-round.test.mjs` |
