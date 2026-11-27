@@ -250,12 +250,29 @@ Live on the Onyx testnet (`onyx-1`): deployed on 2026-11-25 and enabled by the n
 | Settle (p5 forfeits; anyone may settle) | p3 | 1,445,093 | `I2Eohreh3VK5QsYBHmXtF/WoSdmaTMv8hlULMaH2tSQ=` |
 | Claim 3.98 GNOT | p4 | 1,445,095 | `TN2SdmdS+ejbDRGO8fw0mJ/dtIfuot8xS98jHYvuXOU=` |
 
-Round 0 is an earlier run of the same script that stopped after two reveals, so two seats forfeited and pick 10 won. The settle checker agrees with the chain on both:
+### A round played from the web app with Adena
+
+[Round 2](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0:round/2) was played on 2026-11-27 from the web app on `?chain=onyx`, with every write going through the app's Confirm sheet and signed in the Adena extension. Two keys opened the table (15 + 15 minute windows) and joined with 10 and 50; the player joined with 25, revealed, settled and claimed. Target 18.89, so 25 won 2.985 GNOT (pot 3 GNOT, fee 0.015).
+
+| Step | By | Block | Transaction |
+|---|---|---|---|
+| Open a table | p2 | 1,445,219 | `337Vp2K7DcByP3/v+04VppquOCLlKBzd78tg0Fj5VR4=` |
+| Join (sealed) | p2 | 1,445,223 | `x2+veIu6xDkbi+hxhci44iByvZCLODCggwp4wVoEXuQ=` |
+| Join (sealed) | p4 | 1,445,227 | `lF8D2HHNeTxYXLD5JqlQ222CtKI3TrLOvaxR2cJEKMM=` |
+| Join (sealed), web app + Adena | player | 1,445,238 | `yTswc9HjXCU0U4nS7GbQPrJeaOLMenMXwAoUe7xBn8s=` |
+| Reveal 10 | p2 | 1,445,481 | `9rwUB04Y7LaXdEJsrsmBDj3Youa3FcltRlZZLXuuScI=` |
+| Reveal 50 | p4 | 1,445,482 | `kCr2GS5vUXC3IVfsu5R4ze9FZgYBAPia3SYY88/BpRk=` |
+| Reveal 25, web app + Adena | player | 1,445,530 | `Tw99uhPWA/5G/uSIn/r9SwkGd6kQX5L14xit0tCnUN8=` |
+| Settle, web app + Adena | player | 1,445,747 | `lTE19RN0eNXE6QIvTd4/co+QATWjpU1ikQPPKx+AHKE=` |
+| Claim 2.985 GNOT, web app + Adena | player | 1,445,758 | `0Cd2wh0SgiB3+2B98nkNV3r0Su1tOPEKU4tBeLd29Ks=` |
+
+Round 0 is an earlier run of the same script that stopped after two reveals, so two seats forfeited and pick 10 won. The settle checker agrees with the chain on all three:
 
 ```bash
 node tools/verify/verify-round.mjs --all --rpc https://rpc.onyx.testnets.gno.land:443
 # round 0: completed, target 20.00, pot 4 GNOT, fee 0.02 GNOT ... OK: matches the rules
 # round 1: completed, target 17.78, pot 4 GNOT, fee 0.02 GNOT ... OK: matches the rules
+# round 2: completed, target 18.89, pot 3 GNOT, fee 0.015 GNOT ... OK: matches the rules
 ```
 
 ## Known limits
@@ -265,7 +282,7 @@ These follow from the rules and are not bugs:
 - **Last revealer's option.** Reveals are public as they land, so a late revealer can see earlier picks and choose not to reveal. They lose their 1 GNOT to the pot (or, if that leaves fewer than 2 reveals, the round is void and everyone is refunded).
 - **Two-player tables.** With two players the lower pick always wins, and the second revealer can void a round they would lose by not revealing. The game is meant for 3 or more.
 - **Several wallets.** One person with several wallets can skew the average; each wallet pays its own 1 GNOT and its own fees. Points can also be farmed this way; they only buy cosmetics and never affect payouts.
-- **Network costs.** Joining, revealing and settling pay gas and a storage deposit for the data they write. Settling a full table of 10 costs the settler about 52M gas and a storage deposit, because it writes every player's payout and leaderboard position. These amounts are measured on a local chain; public testnet prices may differ.
+- **Network costs.** Writes pay gas and a storage deposit of 100 ugnot per byte they add to the chain. Measured on Onyx: a player's first join writes 12-19 KB (1.2-1.9 GNOT), because it creates the player record and its leaderboard entries; later joins write 3.7-5.3 KB (0.37-0.53 GNOT); a reveal about 3.2 KB (0.32 GNOT); settling three seats about 3.7 KB (0.37 GNOT); a claim nothing. Settling a full table of 10 costs the settler more (about 52M gas on a local chain), since it writes every player's payout and leaderboard position.
 - **Fee recipient.** Fees go to the address that deployed the realm, set once and never changed. Only `WithdrawFees` moves them.
 
 ## License
