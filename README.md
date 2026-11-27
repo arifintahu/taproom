@@ -196,7 +196,7 @@ bash realm/scripts/testnet-deploy.sh <gnokey key> simulate    # free dry run of 
 bash realm/scripts/testnet-deploy.sh <gnokey key> broadcast   # deploys commitreveal and avatar, then the realms
 ```
 
-The script refuses to run if the node reports a different chain than `CHAIN`. Onyx parks every new package until its package approver enables it, about an hour after the approver's checks pass; a realm is checked only once the packages it imports are enabled. The storage deposit is taken at enable time, capped by the `max_deposit` the script sets. Look a package up at [gpas.onyx.testnets.gno.land](https://gpas.onyx.testnets.gno.land).
+The script refuses to run if the node reports a different chain than `CHAIN`. Onyx parks every new package until its package approver enables it, usually about an hour after the approver's checks pass (this deploy took about two days while the queue was slow); a realm is checked only once the packages it imports are enabled. The storage deposit is taken at enable time, capped by the `max_deposit` the script sets. Look a package up at [gpas.onyx.testnets.gno.land](https://gpas.onyx.testnets.gno.land).
 
 ## Tests
 
@@ -215,7 +215,7 @@ Settle invariants are checked on 500 random rounds: credited amounts plus the fe
 
 Played end to end (open, join, reveal, settle, claim) on a local gnodev chain, with the throwaway key and with the Adena extension; the settle checker matches every round played there, and each player's claimable balance equals the sum of their recomputed payouts.
 
-Deployed to the Onyx testnet (`onyx-1`) on 2026-11-25, waiting for the package approver:
+Live on the Onyx testnet (`onyx-1`): deployed on 2026-11-25 and enabled by the network's package approver by 2026-11-27. The realm's pages are at [onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0); play from the app with `?chain=onyx` and the Adena wallet.
 
 | Package | Block | Deploy transaction |
 |---|---|---|
