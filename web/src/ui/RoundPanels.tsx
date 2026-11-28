@@ -74,6 +74,7 @@ export function YourMove({ round: r, v }: { round: Round; v: RoundView }) {
         <>
           <h2 className="h move-title">Write your number on the slip</h2>
           <p className="mu">Closest to 2/3 of the average of the revealed picks wins.</p>
+          {v.twoWarn && <p className="two-warn" data-tg="twoWarn">{v.twoWarn}</p>}
           <PickInput />
           <button type="button" className="pb pp" data-tg="lock" disabled={!!jb || !pickOk(ui.pickRaw)} onClick={() => session.requestJoin()}>
             Seal my pick · pay 1 GNOT
@@ -91,6 +92,7 @@ export function YourMove({ round: r, v }: { round: Round; v: RoundView }) {
         <>
           <h2 className="h move-title">Your slip is sealed{sealedPick != null ? `: ${sealedPick}` : ''}</h2>
           <p className="mu">Only a hash is on chain. Come back when the hourglass turns.</p>
+          {v.twoWarn && <p className="two-warn" data-tg="twoWarn">{v.twoWarn}</p>}
         </>
       )}
       {v.state === 'reveal-now' && (

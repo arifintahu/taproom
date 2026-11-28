@@ -14,6 +14,8 @@
   background: #4a1a14; border-bottom: 3px solid var(--dark);
 }
 .banner p { flex: 1 1 220px; }
+.banner.practice { background: var(--night); border-bottom-color: var(--chalk); }
+.steps { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 4px; }
 
 /* The room keeps its scale on narrow screens and scrolls sideways inside this strip only. */
 .room-scroll { overflow-x: auto; overflow-y: hidden; background: var(--night); }
@@ -150,6 +152,7 @@
 .row-between { display: flex; justify-content: space-between; gap: 8px; }
 .row-between.wrap { flex-wrap: wrap; align-items: center; }
 .warn { border: 2px dashed var(--red); padding: 6px; }
+.two-warn { border: 2px dashed var(--amber); padding: 6px 8px; }
 .narrow { max-width: 520px; display: flex; flex-direction: column; gap: 8px; }
 .full { width: 100%; }
 

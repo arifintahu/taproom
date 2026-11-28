@@ -30,6 +30,23 @@ describe('close-up', () => {
     expect(potX(s, r)).toBe(146)
   })
 
+  it('two-seat warning: shown while a table could end with two picks, not from the third seat on', async () => {
+    const { session } = await loadScenario('s2')
+    session.openRound(0)
+    const s = session.snap
+    const r = session.currentRound()!
+    expect(roundView(s, r).twoWarn).toBeNull() // 2 seated, you would be the third
+    const one = roundView(s, { ...r, entries: r.entries.slice(0, 1) })
+    expect(one.state).toBe('visitor-pick')
+    expect(one.twoWarn).toMatch(/^You would make two seats\. .*lower pick always wins/)
+    expect(roundView(s, { ...r, entries: [] }).twoWarn).toMatch(/^No one is seated yet\./)
+    const me = { ...r.entries[1], addr: s.wallet.address }
+    const sealed = roundView({ ...s, wallet: { ...s.wallet, connected: true } }, { ...r, entries: [r.entries[0], me] })
+    expect(sealed.state).toBe('sealed')
+    expect(sealed.twoWarn).toMatch(/^Two seats so far\./)
+    expect(roundView(s, { ...r, commitEnd: s.now - 1 }).twoWarn).toBeNull() // commit window over
+  })
+
   it('S2 after settle and claim: win, +34 points, pot slides to your seat', async () => {
     const { session } = await played('s2')
     const s = session.snap

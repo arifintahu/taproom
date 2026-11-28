@@ -126,6 +126,8 @@ export interface RoundView {
   title: string
   seatsText: string
   bestWithThree: boolean
+  /** Before the commit window closes: a warning when the table could end with only two picks. */
+  twoWarn: string | null
   steps: { label: string; done: boolean; current: boolean }[]
   countdownLabel: string
   countdown: string
@@ -187,6 +189,14 @@ export function roundView(s: Snapshot, r: Round): RoundView {
     else outcome = me.revealed ? 'lose' : 'forfeit'
   }
 
+  // With two revealed picks the target is a third of their sum, so the lower pick always wins.
+  const seated = r.entries.length + (state === 'visitor-pick' ? 1 : 0)
+  const twoWarn = ph === 'commit' && seated <= 2
+    ? `${state === 'visitor-pick'
+      ? (seated === 1 ? 'No one is seated yet.' : 'You would make two seats.')
+      : (seated === 1 ? "You're the only seat so far." : 'Two seats so far.')} If only two picks are revealed, the lower pick always wins (equal picks split the pot). Wait for a third player or bring a friend.`
+    : null
+
   const points = res && me ? pointsFor(res, me.addr, me.revealed, me.bonus) : 0
   const pointsBreak = points ? `10 for revealing${iWin ? ' + 20 for the win' : ''}${me?.bonus ? ` + ${me.bonus} streak bonus` : ''}` : ''
   const w0 = r.entries.find((e) => e.addr === win[0])
@@ -219,6 +229,7 @@ export function roundView(s: Snapshot, r: Round): RoundView {
     title: `${PRESETS[presetOfRound(r)].label} table · ${SKINS[r.skin]?.name ?? 'Oak table'}`,
     seatsText: `${r.entries.length} of ${MAX_PLAYERS} seats`,
     bestWithThree: r.entries.length < 3 && ph !== 'done',
+    twoWarn,
     steps,
     showCountdown: ph === 'commit' || ph === 'reveal',
     countdownLabel: ph === 'commit' ? 'Commit window closes in' : ph === 'reveal' ? 'Reveal window closes in' : ph === 'settle' ? 'Windows closed. Waiting for Settle.' : 'Round settled',

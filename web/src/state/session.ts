@@ -14,7 +14,7 @@ import { type SaltStore } from './salts'
 import { practiceResult, type Practice } from '../game/practice'
 
 export type PanelId = 'regular' | 'hall' | 'hearth' | 'howto' | 'fees' | 'shop' | 'settings'
-export type SheetId = 'connect' | 'create'
+export type SheetId = 'connect' | 'create' | 'welcome'
 export type ShopTab = 'hat' | 'outfit' | 'held' | 'companion' | 'skin' | 'freeze'
 export type TxKind = 'join' | 'reveal' | 'settle' | 'claim' | 'create' | 'buy' | 'skin' | 'freeze' | 'equip' | 'withdraw'
 export type TxStage = 'confirm' | 'broadcast' | 'confirmed' | 'failed' | 'rejected'
