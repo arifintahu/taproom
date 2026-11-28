@@ -6,7 +6,7 @@ import './gno/polyfill' // must load before the Gno client modules
 import { GnoChain } from './gno/GnoChain'
 import { AdenaSigner, DevKeySigner } from './gno/signers'
 
-const REALM = 'gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1'
+const REALM = 'gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v2'
 
 export const LOCAL = {
   rpc: 'http://127.0.0.1:26657',

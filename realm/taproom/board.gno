@@ -63,8 +63,8 @@ type boardRank struct {
 // boardTop holds each board's top maxBoardRows rows, best first. A short list instead of an index
 // over every player: an update rewrites one list, which stops growing once it is full, so a
 // player's first join adds little storage however many players there are. A listed player whose
-// value drops out of the top rows leaves the list; a player just below returns when their own
-// stats next change, so the rows near the bottom can lag until then.
+// value falls below every other row of a full list leaves it; the free row goes to the next
+// player whose stats change, so the rows near the bottom can lag until then.
 var boardTop [boardCount][]boardRank
 
 // boardValue is what a player is ranked by on board i. ok is false when the player is not listed:
@@ -117,6 +117,7 @@ func reindex(a address) {
 		if pos >= 0 && ok && list[pos].V == v {
 			continue // already listed at this value
 		}
+		full := len(list) >= maxBoardRows
 		changed := false
 		if pos >= 0 {
 			list = append(list[:pos], list[pos+1:]...)
@@ -128,7 +129,8 @@ func reindex(a address) {
 			for j < len(list) && ahead(i, list[j], row) {
 				j++
 			}
-			if j < maxBoardRows {
+			// last place on a list that was full: an unlisted player may rank higher, so leave
+			if j < maxBoardRows && !(pos >= 0 && full && j == len(list)) {
 				list = append(list, boardRank{})
 				copy(list[j+1:], list[j:])
 				list[j] = row

@@ -42,10 +42,12 @@ func TestJoinPlayerCap(cur realm, t *testing.T) {
 		testing.SetRealm(testing.NewUserRealm(testutils.TestAddress("cap" + strconv.Itoa(i))))
 		fund()
 		Join(cross(cur), id, CommitHash(id, testutils.TestAddress("cap"+strconv.Itoa(i)), int64(i), "s"))
+		unfund()
 	}
 	testing.SetRealm(testing.NewUserRealm(testutils.TestAddress("cap-late")))
 	fund()
 	uassert.AbortsContains(t, cur, "round is full", func() { Join(cross(cur), id, CommitHash(id, testutils.TestAddress("cap-late"), 1, "s")) })
+	unfund()
 	uassert.Equal(t, int64(maxPlayers)*entryFee, getRound(id).Pot)
 }
 
@@ -130,6 +132,7 @@ func TestViewsJSON(cur realm, t *testing.T) {
 	fund()
 	h := CommitHash(id, u, 22, "salt"+pad)
 	Join(cross(cur), id, h)
+	unfund()
 
 	uassert.Equal(t, 1, RoundCount())
 	js := RoundsJSON(0, 10)

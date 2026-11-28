@@ -9,6 +9,7 @@ import (
 	"chain/banker"
 	"chain/runtime/unsafe"
 	"strconv"
+	"strings"
 	"time"
 
 	"gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/commitreveal/v0"
@@ -119,7 +120,7 @@ var (
 	roundCount    int
 	openRounds    = avl.NewTree() // roundKey(id) -> true while the round is not settled
 	openByCreator = avl.NewTree() // address -> int, open rounds per creator (the 3-round cap)
-	recentSettled []int           // the last 5 settled round IDs, oldest first
+	recentSettled []int           // the last 5 completed round IDs, oldest first
 	players       = avl.NewTree() // address -> *Player
 	claimable     = avl.NewTree() // address -> int64
 )
@@ -179,11 +180,25 @@ func sealedValue(roundID int, player address, pick int64) string {
 	return strconv.Itoa(roundID) + ":" + player.String() + ":" + strconv.FormatInt(pick, 10)
 }
 
+// mustUser requires a direct wallet call that sends no coins: only Join takes a deposit, and coins
+// sent with any other call would be stranded in the realm.
 func mustUser(cur realm) address {
+	a := mustUserCall(cur)
+	noCoins()
+	return a
+}
+
+func mustUserCall(cur realm) address {
 	if !cur.Previous().IsUserCall() {
 		panic("direct user call required")
 	}
 	return cur.Previous().Address()
+}
+
+func noCoins() {
+	if len(unsafe.OriginSend()) != 0 {
+		panic("this call takes no coins")
+	}
 }
 
 func getRound(id int) *Round {
@@ -275,7 +290,7 @@ func NewRound(cur realm, commitSecs, revealSecs int64, boardSkin int) int {
 
 // Join deposits the entry fee and stores a hidden pick.
 func Join(cur realm, roundID int, commit string) {
-	caller := mustUser(cur)
+	caller := mustUserCall(cur) // the one call that takes coins: exactly the entry fee, checked below
 	r := getRound(roundID)
 	t := now()
 	if r.Seal.Phase(t) != commitreveal.CommitPhase {
@@ -290,6 +305,9 @@ func Join(cur realm, roundID int, commit string) {
 	sent := unsafe.OriginSend()
 	if len(sent) != 1 || sent[0].Denom != denom || sent[0].Amount != entryFee {
 		panic("must send exactly the entry fee in ugnot")
+	}
+	if commit != strings.ToLower(commit) {
+		panic("commit must be lowercase hex") // Reveal compares against lowercase sha256 hex
 	}
 	if err := r.Seal.Commit(t, caller, commit); err != nil {
 		panic(err.Error())
@@ -322,8 +340,13 @@ func Reveal(cur realm, roundID int, pick int64, salt string) {
 	reindex(caller)
 }
 
-// Settle can be called by anyone once the reveal window has closed.
+// Settle can be called by anyone once the reveal window has closed, including other realms and
+// scripts (a keeper or scheduler, for example): it reads no caller and pays the same whoever calls.
+// It is the one write without mustUser. A wallet calling it directly must still send no coins.
 func Settle(cur realm, roundID int) {
+	if cur.Previous().IsUserCall() {
+		noCoins()
+	}
 	r := getRound(roundID)
 	if now() < r.Seal.RevealEnd {
 		panic("reveal window still open")
@@ -334,10 +357,6 @@ func Settle(cur realm, roundID int) {
 	r.Settled = true // effects before any payout bookkeeping
 	openRounds.Remove(roundKey(r.ID))
 	openByCreator.Set(r.Creator.String(), openCount(r.Creator)-1)
-	recentSettled = append(recentSettled, r.ID)
-	if len(recentSettled) > 5 {
-		recentSettled = recentSettled[len(recentSettled)-5:]
-	}
 	defer func() { // board positions move with the credits and points below
 		for _, p := range r.Seal.Players() {
 			reindex(p)
@@ -404,6 +423,12 @@ func Settle(cur realm, roundID int) {
 		getPlayer(w).Wins++
 	}
 	r.Winners = winners
+
+	// Recent results list completed rounds only, so empty or void rounds cannot push them off.
+	recentSettled = append(recentSettled, r.ID)
+	if len(recentSettled) > 5 {
+		recentSettled = recentSettled[len(recentSettled)-5:]
+	}
 }
 
 // Claim pays out the caller's balance (pull payment).

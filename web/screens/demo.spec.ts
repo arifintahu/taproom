@@ -7,7 +7,7 @@ import { join } from 'node:path'
 // video plus a JSON file of scene start times (seconds from the start of the video), so an editor
 // can cut it to the narration. DEMO_OUT picks the output folder (default ./demo-out).
 const OUT = process.env.DEMO_OUT ?? 'demo-out'
-const REALM = process.env.DEMO_REALM ?? 'g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1'
+const REALM = process.env.DEMO_REALM ?? 'g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v2'
 const ROUND = process.env.DEMO_ROUND ?? '0'
 const CHECKER = process.env.DEMO_CHECKER_OUTPUT ?? ''
 
