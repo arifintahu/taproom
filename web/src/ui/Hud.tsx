@@ -2,6 +2,7 @@ import { fmtG, human, humanLong } from '../game/format'
 import { spendable, streakState } from '../game/rules'
 import { connected } from '../game/selectors'
 import { useSession } from '../state/useSession'
+import { HOSTED_REAL } from '../state/welcome'
 
 /** Status bar: title, coin pouch, network, streak flame, points, New table, Settings, How to play. */
 export function Hud() {
@@ -48,12 +49,19 @@ export function Hud() {
   )
 }
 
-/** Red banners for an unreachable RPC or the wrong Adena network. */
+/** Banners: practice mode on the hosted site, then red ones for an unreachable RPC or the wrong Adena network. */
 export function Banners() {
   const [{ snap }, session] = useSession()
   const wrongNet = connected(snap) && snap.rpcOk && snap.wallet.network !== snap.network
+  const practice = HOSTED_REAL && !!session.mock && !new URLSearchParams(location.search).has('dev')
   return (
     <>
+      {practice && (
+        <div role="note" className="banner practice" data-tg="practiceBanner">
+          <p><strong>Practice table.</strong> The chain, wallet and regulars are simulated. Nothing here is on the testnet.</p>
+          <a className="pb sm" href="/">Play on the testnet</a>
+        </div>
+      )}
       {!snap.rpcOk && (
         <div role="alert" className="banner" data-tg="rpcBanner">
           <p><strong>Can't reach the {snap.networkLabel} node.</strong> Nothing you sign is sent until it's back.</p>

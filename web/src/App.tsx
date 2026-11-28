@@ -7,12 +7,17 @@ import { Banners, Hud } from './ui/Hud'
 import { ConfirmSheet } from './ui/ConfirmSheet'
 import { Panel } from './ui/Panels'
 import { CreateSheet } from './ui/panels/CreateSheet'
-import { ConnectSheet } from './ui/Sheets'
+import { ConnectSheet, WelcomeSheet } from './ui/Sheets'
+import { welcomeSeen } from './state/welcome'
 import { TableView } from './ui/TableView'
 
 export default function App() {
   const [{ ui }, session] = useSession()
   const simulated = useContext(ViewportContext)
+
+  useEffect(() => {
+    if (!session.mock && !welcomeSeen()) session.openSheet('welcome')
+  }, [session])
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -43,6 +48,7 @@ export default function App() {
       {ui.panel && <Panel panel={ui.panel} />}
       {ui.sheet === 'connect' && <ConnectSheet />}
       {ui.sheet === 'create' && <CreateSheet />}
+      {ui.sheet === 'welcome' && <WelcomeSheet />}
       <ConfirmSheet />
       <Toasts />
     </div>
