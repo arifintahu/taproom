@@ -2,6 +2,8 @@ package taproom
 
 // Render pages for gnoweb. Avatars are SVG data URIs from the avatar package, which gnoweb
 // allows in markdown images. Paths: "" (home), "board/<name>", "player/<address>", "round/<id>".
+// Action links (txlink) open gnoweb's call form with the round and amount filled in, so the game
+// can be played from gnoweb with Adena and no other site.
 
 import (
 	"chain/runtime/unsafe"
@@ -10,6 +12,7 @@ import (
 	"time"
 
 	"gno.land/p/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/avatar/v0"
+	"gno.land/p/moul/txlink/v0"
 )
 
 // boardPageRows caps a board page: each avatar costs about 100M gas, and a Render query may use 3B.
@@ -53,6 +56,10 @@ func renderHome() string {
 	if open == 0 {
 		sb.WriteString("No open tables right now.\n")
 	}
+	sb.WriteString("\nOpen a table (Oak, free): " +
+		action("Quick, 2 + 2 min", txlink.NewLink("NewRound").AddArgs("commitSecs", "120", "revealSecs", "120", "boardSkin", "0")) + " · " +
+		action("Standard, 30 + 30 min", txlink.NewLink("NewRound").AddArgs("commitSecs", "1800", "revealSecs", "1800", "boardSkin", "0")) + " · " +
+		action("Daily, 12 + 12 h", txlink.NewLink("NewRound").AddArgs("commitSecs", "43200", "revealSecs", "43200", "boardSkin", "0")) + "\n")
 
 	sb.WriteString("\n## Recent results\n\n")
 	shown := 0
@@ -62,7 +69,7 @@ func renderHome() string {
 		sb.WriteString("- [Round " + strconv.Itoa(r.ID) + "](" + link("round/"+strconv.Itoa(r.ID)) + "): " + resultLine(r) + "\n")
 	}
 	if shown == 0 {
-		sb.WriteString("No settled rounds yet.\n")
+		sb.WriteString("No completed rounds yet.\n")
 	}
 
 	sb.WriteString("\n## Leaderboards\n\n")
@@ -145,7 +152,11 @@ func renderPlayer(a address) string {
 	if p.Scored > 0 {
 		sb.WriteString("- Average distance to the target: " + hundredths(sharp100(p)) + " over " + i64(p.Scored) + plural(p.Scored, " round", " rounds") + "\n")
 	}
-	sb.WriteString("- Style score: " + i64(styleOf(p.Equipped)) + "\n\n[Back to the taproom](" + link("") + ")\n")
+	sb.WriteString("- Style score: " + i64(styleOf(p.Equipped)) + "\n")
+	if c := Claimable(a); c > 0 {
+		sb.WriteString("\n" + gnot(c) + " to claim: " + action("Claim", txlink.NewLink("Claim")) + " (signed by this address)\n")
+	}
+	sb.WriteString("\n[Back to the taproom](" + link("") + ")\n")
 	return sb.String()
 }
 
@@ -185,11 +196,35 @@ func renderRound(r *Round) string {
 		}
 		sb.WriteString("| " + gnome(p, equipped) + " | [" + short(p) + "](" + link("player/"+p.String()) + ") | " + pick + " | " + status + " |\n")
 	}
-	sb.WriteString("\n[Back to the taproom](" + link("") + ")\n")
+	sb.WriteString("\n" + roundActions(r, t) + "\n[Back to the taproom](" + link("") + ")\n")
 	return sb.String()
 }
 
+// roundActions is what anyone can do at this table now, as gnoweb call links.
+func roundActions(r *Round, t int64) string {
+	id := strconv.Itoa(r.ID)
+	switch {
+	case r.Settled:
+		return "Winners and refunded players: " + action("Claim", txlink.NewLink("Claim")) + "\n"
+	case t < r.Seal.CommitEnd:
+		if r.Seal.Count() >= maxPlayers {
+			return "The table is full.\n"
+		}
+		return "Take a seat: " + action("Join for 1 GNOT", txlink.NewLink("Join").AddArgs("roundID", id, "commit", "").SetSend("1000000ugnot")) +
+			". The commit is `CommitHash(" + id + ", <your address>, <pick>, <salt>)` from this realm's " +
+			"[functions page](" + link("") + "$help); pick 0 to 100, salt 16 to 128 characters. Keep both: you need them to reveal.\n"
+	case t < r.Seal.RevealEnd:
+		return "Seated players: " + action("Reveal", txlink.NewLink("Reveal").AddArgs("roundID", id, "pick", "", "salt", "")) +
+			" with the pick and salt you sealed. A seat that does not reveal forfeits its 1 GNOT.\n"
+	}
+	return "Anyone can " + action("Settle", txlink.NewLink("Settle").AddArgs("roundID", id)) + " this round now.\n"
+}
+
 // ---------- helpers ----------
+
+func action(label string, b *txlink.TxBuilder) string {
+	return "[" + label + "](" + b.URL() + ")"
+}
 
 func phaseLine(r *Round, t int64) string {
 	if r.Settled {

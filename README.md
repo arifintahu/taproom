@@ -310,6 +310,9 @@ These follow from the rules and are not bugs:
 - **Network costs.** Writes pay gas and a storage deposit of 100 ugnot per byte they add to the chain. With `taproom/v1`, measured on a local chain: a player's first join writes about 9.9 KB (0.99 GNOT), mostly the new player record and its commit; later joins about 3.5-3.8 KB (0.35-0.38 GNOT); a reveal about 0.2 KB; settling three seats about 1.8 KB (0.18 GNOT); a claim nothing. `taproom/v0` kept leaderboards and each round's picks in trees and wrote about twice as much (measured on Onyx: 12-19 KB for a first join, about 3.2 KB per reveal).
 - **Leaderboard tail.** Each board keeps its top 50 rows. Points and best streak only rise, so those boards are exact. On the net, sharpest and style boards, a listed player whose value drops off the list is removed, and a player just below the list returns when their own stats next change, so the last rows can lag until then.
 - **Fee recipient.** Fees go to the address that deployed the realm, set once and never changed. Only `WithdrawFees` moves them.
+- **Sealed polls.** `sealedpoll` has no cap on votes per poll, so a very large number of funded addresses could make one poll's page too large to render. Polls hold no coins.
+
+Security reviews, their findings and what each version fixed are in [SECURITY.md](SECURITY.md).
 
 ## License
 

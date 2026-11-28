@@ -11,7 +11,7 @@ import (
 	"gno.land/p/nt/uassert/v0"
 )
 
-var realmAddr = chain.PackageAddress("gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1")
+var realmAddr = chain.PackageAddress("gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v2")
 
 // fund simulates the send envelope: tests do not move coins on their own.
 func fund() {
@@ -19,6 +19,9 @@ func fund() {
 	testing.SetOriginSend(fee)
 	testing.IssueCoins(realmAddr, fee)
 }
+
+// unfund clears the send envelope after a Join: every other call must send no coins.
+func unfund() { testing.SetOriginSend(chain.Coins{}) }
 
 // pad makes test salts long enough for Reveal (at least 16 characters).
 const pad = "-0123456789abcdef"
@@ -92,12 +95,15 @@ func TestFullRoundPaysClosestToTwoThirds(cur realm, t *testing.T) {
 	testing.SetRealm(testing.NewUserRealm(alice))
 	fund()
 	Join(cross(cur), id, CommitHash(id, alice, 10, "sa"+pad))
+	unfund()
 	testing.SetRealm(testing.NewUserRealm(bob))
 	fund()
 	Join(cross(cur), id, CommitHash(id, bob, 50, "sb"+pad))
+	unfund()
 	testing.SetRealm(testing.NewUserRealm(carol))
 	fund()
 	Join(cross(cur), id, CommitHash(id, carol, 90, "sc"+pad))
+	unfund()
 
 	nowOverride = 1150
 	testing.SetRealm(testing.NewUserRealm(alice))
@@ -151,12 +157,15 @@ func TestNonRevealerForfeitsToWinner(cur realm, t *testing.T) {
 	testing.SetRealm(testing.NewUserRealm(alice))
 	fund()
 	Join(cross(cur), id, CommitHash(id, alice, 10, "sa"+pad))
+	unfund()
 	testing.SetRealm(testing.NewUserRealm(bob))
 	fund()
 	Join(cross(cur), id, CommitHash(id, bob, 50, "sb"+pad))
+	unfund()
 	testing.SetRealm(testing.NewUserRealm(carol))
 	fund()
 	Join(cross(cur), id, CommitHash(id, carol, 20, "sc"+pad))
+	unfund()
 
 	nowOverride = 2150
 	testing.SetRealm(testing.NewUserRealm(alice))
@@ -185,9 +194,11 @@ func TestVoidRoundRefundsEveryone(cur realm, t *testing.T) {
 	testing.SetRealm(testing.NewUserRealm(alice))
 	fund()
 	Join(cross(cur), id, CommitHash(id, alice, 10, "sa"+pad))
+	unfund()
 	testing.SetRealm(testing.NewUserRealm(bob))
 	fund()
 	Join(cross(cur), id, CommitHash(id, bob, 50, "sb"+pad))
+	unfund()
 
 	nowOverride = 3150
 	testing.SetRealm(testing.NewUserRealm(alice))
@@ -214,6 +225,7 @@ func TestVoidRoundGivesNoPoints(cur realm, t *testing.T) {
 	testing.SetRealm(testing.NewUserRealm(solo))
 	fund()
 	Join(cross(cur), id, CommitHash(id, solo, 10, "s"+pad))
+	unfund()
 	nowOverride = 7150
 	Reveal(cross(cur), id, 10, "s"+pad)
 	nowOverride = 7250
@@ -240,9 +252,11 @@ func TestPointsAtSettleUseRevealWeek(cur realm, t *testing.T) {
 	testing.SetRealm(testing.NewUserRealm(a))
 	fund()
 	Join(cross(cur), id, CommitHash(id, a, 10, "sa"+pad))
+	unfund()
 	testing.SetRealm(testing.NewUserRealm(b))
 	fund()
 	Join(cross(cur), id, CommitHash(id, b, 50, "sb"+pad))
+	unfund()
 
 	nowOverride = monday + week - 150 // still Sunday
 	testing.SetRealm(testing.NewUserRealm(a))
@@ -287,9 +301,11 @@ func TestOutOfOrderSettleKeepsStreak(cur realm, t *testing.T) {
 	testing.SetRealm(testing.NewUserRealm(a))
 	fund()
 	Join(cross(cur), ra, CommitHash(ra, a, 10, "a1"+pad))
+	unfund()
 	testing.SetRealm(testing.NewUserRealm(b))
 	fund()
 	Join(cross(cur), ra, CommitHash(ra, b, 50, "b1"+pad))
+	unfund()
 	nowOverride = monday + week - 400 // still Sunday
 	testing.SetRealm(testing.NewUserRealm(a))
 	Reveal(cross(cur), ra, 10, "a1"+pad)
@@ -302,9 +318,11 @@ func TestOutOfOrderSettleKeepsStreak(cur realm, t *testing.T) {
 	testing.SetRealm(testing.NewUserRealm(a))
 	fund()
 	Join(cross(cur), rb, CommitHash(rb, a, 10, "a2"+pad))
+	unfund()
 	testing.SetRealm(testing.NewUserRealm(b))
 	fund()
 	Join(cross(cur), rb, CommitHash(rb, b, 50, "b2"+pad))
+	unfund()
 	nowOverride = monday + week + 250
 	testing.SetRealm(testing.NewUserRealm(a))
 	Reveal(cross(cur), rb, 10, "a2"+pad)
@@ -340,6 +358,7 @@ func TestTieSplitWithRemainderAndFee(cur realm, t *testing.T) {
 		testing.SetRealm(testing.NewUserRealm(a))
 		fund()
 		Join(cross(cur), id, CommitHash(id, a, picks[i], "s"+pad))
+		unfund()
 	}
 	nowOverride = 5150
 	for i, a := range who {
@@ -380,9 +399,11 @@ func TestWithdrawFees(cur realm, t *testing.T) {
 	testing.SetRealm(testing.NewUserRealm(a))
 	fund()
 	Join(cross(cur), id, CommitHash(id, a, 10, "sa"+pad))
+	unfund()
 	testing.SetRealm(testing.NewUserRealm(b))
 	fund()
 	Join(cross(cur), id, CommitHash(id, b, 50, "sb"+pad))
+	unfund()
 	nowOverride = 6150
 	testing.SetRealm(testing.NewUserRealm(a))
 	Reveal(cross(cur), id, 10, "sa"+pad)
@@ -418,6 +439,7 @@ func TestRejections(cur realm, t *testing.T) {
 
 	fund()
 	Join(cross(cur), id, CommitHash(id, alice, 10, "sa"+pad))
+	unfund()
 	// double join
 	uassert.AbortsContains(t, cur, "already joined", func() { Join(cross(cur), id, CommitHash(id, alice, 1, "x"+pad)) })
 
@@ -433,6 +455,7 @@ func TestRejections(cur realm, t *testing.T) {
 	// join after commit window
 	testing.SetOriginSend(chain.NewCoins(chain.NewCoin("ugnot", entryFee)))
 	uassert.AbortsContains(t, cur, "closed", func() { Join(cross(cur), id, CommitHash(id, bob, 1, "x"+pad)) })
+	unfund()
 	// settle too early
 	uassert.AbortsContains(t, cur, "still open", func() { Settle(cross(cur), id) })
 }
@@ -506,12 +529,15 @@ func TestCopiedCommitCannotBeRevealed(cur realm, t *testing.T) {
 	fund()
 	h := CommitHash(id, victim, 20, "secret"+pad)
 	Join(cross(cur), id, h)
+	unfund()
 
 	testing.SetRealm(testing.NewUserRealm(copier))
 	fund()
 	Join(cross(cur), id, h) // the hash is public; joining with it is allowed
+	unfund()
 	fund()
 	Join(cross(cur), other, h)
+	unfund()
 
 	nowOverride = 5150
 	testing.SetRealm(testing.NewUserRealm(victim))

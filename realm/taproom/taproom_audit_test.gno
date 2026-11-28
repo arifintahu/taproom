@@ -54,7 +54,7 @@ func TestOpenRoundCounter(cur realm, t *testing.T) {
 	Settle(cross(cur), r0) // anyone can settle; the slot goes back to the creator
 	uassert.Equal(t, 2, openCount(a))
 	uassert.Equal(t, 3, openRounds.Size())
-	uassert.Equal(t, 1, len(recentSettled))
+	uassert.Equal(t, 0, len(recentSettled)) // an empty round is not a result
 	testing.SetRealm(testing.NewUserRealm(a))
 	NewRound(cross(cur), 60, 60, 0)
 	uassert.Equal(t, 5, RoundCount())
@@ -101,6 +101,7 @@ func TestShortSaltAndCodeCallsRejected(cur realm, t *testing.T) {
 	testing.SetRealm(testing.NewUserRealm(a))
 	fund()
 	Join(cross(cur), id, CommitHash(id, a, 33, "short"))
+	unfund()
 	nowOverride = 6150
 	uassert.AbortsContains(t, cur, "16 to 128 visible ASCII", func() { Reveal(cross(cur), id, 33, "short") })
 	uassert.AbortsContains(t, cur, "16 to 128 visible ASCII", func() { Reveal(cross(cur), id, 33, "has a space in it ok") })
@@ -157,9 +158,11 @@ func TestSeatsKeepCommitAndPick(cur realm, t *testing.T) {
 	testing.SetRealm(testing.NewUserRealm(a))
 	fund()
 	Join(cross(cur), id, ha)
+	unfund()
 	testing.SetRealm(testing.NewUserRealm(b))
 	fund()
 	Join(cross(cur), id, hb)
+	unfund()
 	r := getRound(id)
 	uassert.Equal(t, 2, len(r.Seats))
 	uassert.Equal(t, ha, r.Seats[0].Commit)
