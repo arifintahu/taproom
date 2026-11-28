@@ -91,7 +91,7 @@ taproom/
   media/           README screenshots (regenerate with pnpm screenshots)
 ```
 
-- **Realm:** `gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1` (the first version, `taproom/v0`, stays live with the rounds logged under Status). Each round runs its sealed picks on `commitreveal`; the realm adds integer settle maths (`|3 * n * pick - 2 * sum|`), pull payments with effects before transfers, and a fee recipient that can only withdraw accrued fees. Read views return JSON for the web app.
+- **Realm:** `gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v2` (earlier versions `taproom/v0` and `taproom/v1` stay live with the rounds logged under Status; [SECURITY.md](SECURITY.md) lists what each version fixed). Each round runs its sealed picks on `commitreveal`; the realm adds integer settle maths (`|3 * n * pick - 2 * sum|`), pull payments with effects before transfers, and a fee recipient that can only withdraw accrued fees. Read views return JSON for the web app.
 - **Web app:** one `ChainClient` interface with two implementations. `MockChain` mirrors the realm in memory for the demo and the tests. `GnoChain` reads with `vm/qeval` and signs through Adena, or through a throwaway key on a local chain.
 - **Time:** the realm uses block time. Gno has no scheduled execution, so streaks are evaluated lazily and anyone can settle.
 
@@ -145,6 +145,8 @@ The realm keeps leaderboard stats on each player (net coins, wins, average dista
 | `taproom:player/<address>` | Rank, points, streak, wins, net coins, average distance, style |
 
 Each gnome costs about 100M gas to draw, and a page render may use 3B, so a page shows at most 10 of them.
+
+The pages also carry call links for what can be done now, so a round can be played from gnoweb with Adena and no other site: the home page opens a Quick, Standard or Daily table; a round page offers Join (with the 1 GNOT send filled in), then Reveal, then Settle, then Claim; a player page offers Claim when coins are owed. gnoweb's call form fills in the round and asks you to confirm the send. For Join you need your commit, `CommitHash(<round>, <your address>, <pick>, <salt>)`, which gnoweb's expression evaluator on the realm's functions page computes; keep the pick and salt to reveal.
 
 ## Check any round yourself
 
@@ -224,7 +226,7 @@ Settle invariants are checked on 500 random rounds: credited amounts plus the fe
 
 Played end to end (open, join, reveal, settle, claim) on a local gnodev chain, with the throwaway key and with the Adena extension; the settle checker matches every round played there, and each player's claimable balance equals the sum of their recomputed payouts.
 
-Live on the Onyx testnet (`onyx-1`): deployed on 2026-11-25 and enabled by the network's package approver by 2026-11-27; `taproom/v1` followed on 2026-11-27. The realm's pages are at [onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1); play from the app at [taproom.arifintahu.com](https://taproom.arifintahu.com) with the Adena wallet.
+Live on the Onyx testnet (`onyx-1`): deployed on 2026-11-25 and enabled by the network's package approver by 2026-11-27; `taproom/v1` followed on 2026-11-27 and `taproom/v2` on 2026-11-28. The realm's pages are at [onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v2](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v2); play from the app at [taproom.arifintahu.com](https://taproom.arifintahu.com) with the Adena wallet.
 
 | Package | Block | Deploy transaction |
 |---|---|---|
@@ -233,6 +235,7 @@ Live on the Onyx testnet (`onyx-1`): deployed on 2026-11-25 and enabled by the n
 | [`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0`](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v0) | 1,398,124 | `7Q2aiZlvChAiEr8Sks+a4BnqnvQulw5vcwH1fXXMZRY=` |
 | [`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll/v0`](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/sealedpoll/v0) | 1,398,125 | `kqpnbGedAWKnMMmTLaLT8VCdKPMIORrJwV9K6Z2IVwQ=` |
 | [`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1`](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v1) | 1,446,450 | `3npd4pYmk/2hidwXHAMr74onvHlm/SEvFXDOyCG6Gcc=` |
+| [`gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v2`](https://onyx.testnets.gno.land/r/g1vxsg6ht4nklaud70yaszcgkhc9ttancr9nlzzq/taproom/v2) | 1,469,478 | `qdySvpRaYfjv+K1TqspwDVy9h/dGfPWXQP1guDahHpM=` |
 
 ### A seeded round on taproom/v1
 
@@ -307,7 +310,7 @@ These follow from the rules and are not bugs:
 - **Last revealer's option.** Reveals are public as they land, so a late revealer can see earlier picks and choose not to reveal. They lose their 1 GNOT to the pot (or, if that leaves fewer than 2 reveals, the round is void and everyone is refunded).
 - **Two-player tables.** With two players the lower pick always wins, and the second revealer can void a round they would lose by not revealing. The game is meant for 3 or more.
 - **Several wallets.** One person with several wallets can skew the average; each wallet pays its own 1 GNOT and its own fees. Points can also be farmed this way; they only buy cosmetics and never affect payouts.
-- **Network costs.** Writes pay gas and a storage deposit of 100 ugnot per byte they add to the chain. With `taproom/v1`, measured on a local chain: a player's first join writes about 9.9 KB (0.99 GNOT), mostly the new player record and its commit; later joins about 3.5-3.8 KB (0.35-0.38 GNOT); a reveal about 0.2 KB; settling three seats about 1.8 KB (0.18 GNOT); a claim nothing. `taproom/v0` kept leaderboards and each round's picks in trees and wrote about twice as much (measured on Onyx: 12-19 KB for a first join, about 3.2 KB per reveal).
+- **Network costs.** Writes pay gas and a storage deposit of 100 ugnot per byte they add to the chain. With `taproom/v1`, measured on a local chain: a player's first join writes about 9.9 KB (0.99 GNOT), mostly the new player record and its commit; later joins about 3.5-3.8 KB (0.35-0.38 GNOT); a reveal about 0.2 KB; settling three seats about 1.8 KB (0.18 GNOT); a claim nothing. `taproom/v2` writes about the same (first join 9.8 KB, a reveal 0.16 KB, settling four seats 2.8 KB). `taproom/v0` kept leaderboards and each round's picks in trees and wrote about twice as much (measured on Onyx: 12-19 KB for a first join, about 3.2 KB per reveal).
 - **Leaderboard tail.** Each board keeps its top 50 rows. Points and best streak only rise, so those boards are exact. On the net, sharpest and style boards, a listed player whose value drops off the list is removed, and a player just below the list returns when their own stats next change, so the last rows can lag until then.
 - **Fee recipient.** Fees go to the address that deployed the realm, set once and never changed. Only `WithdrawFees` moves them.
 - **Sealed polls.** `sealedpoll` has no cap on votes per poll, so a very large number of funded addresses could make one poll's page too large to render. Polls hold no coins.
